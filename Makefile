@@ -1,14 +1,21 @@
 CONTIKI_PROJECT=gateway
-#all: $(CONTIKI_PROJECT)
-#APPS=
+all: MKDIR_P $(CONTIKI_PROJECT)
+
+MKDIR_P:
+	mkdir -p obj_$(TARGET)
+	mkdir -p obj_$(TARGET)/tools
+	mkdir -p obj_$(TARGET)/$(CONTIKI)
+	mkdir -p obj_$(TARGET)/$(CONTIKI)/dev
+	mkdir -p obj_$(TARGET)/$(CONTIKI)/dev/enc28j60
+
 
 
 CONTIKI=contiki_multiple_interface
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 # TODO: retirar
 CFLAGS += -g
-#PROJECT_SOURCEFILES += $(CONTIKI)/../core/net/ipv4/uip-neighbor.c $(CONTIKI)/../core/net/ipv4/uip_arp.c ethernet-drv.c ethernet-dev.c
-PROJECT_SOURCEFILES += tools/sicslow_ethernet.c enc28j60_spi_arch.c $(CONTIKI)/../dev/enc28j60/enc28j60.c ethernet-drv.c ethernet-dev.c
+PROJECT_SOURCEFILES += tools/sicslow_ethernet.c enc28j60_spi_arch.c $(CONTIKI)/dev/enc28j60/enc28j60.c ethernet-drv.c ethernet-dev.c
+
 
 CONTIKI_WITH_IPV6 = 1
 CONTIKI_WITH_RPL = 0
