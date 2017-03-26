@@ -1,38 +1,34 @@
-CONTIKI_PROJECT=gateway
-all: MKDIR_P $(CONTIKI_PROJECT)
+CONTIKI_PROJECT=controller
+all: $(CONTIKI_PROJECT)
 
-MKDIR_P:
-	mkdir -p obj_$(TARGET)
-	mkdir -p obj_$(TARGET)/tools
-	mkdir -p obj_$(TARGET)/$(CONTIKI)
-	mkdir -p obj_$(TARGET)/$(CONTIKI)/dev
-	mkdir -p obj_$(TARGET)/$(CONTIKI)/dev/enc28j60
+CONTIKI = contiki_multiple_interface
+PROJECT_DEVICE_DIR = ./dev
+# REST Engine shall use Erbium CoAP implementation
+APPS += er-coap er-http
+APPS += rest-engine
 
-
-
-CONTIKI=contiki_multiple_interface
+# ----------------  Flags  ----------------
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
-# TODO: retirar
+# Debug - TODO: retirar
 CFLAGS += -g
-PROJECT_SOURCEFILES += tools/sicslow_ethernet.c enc28j60_spi_arch.c $(CONTIKI)/dev/enc28j60/enc28j60.c ethernet-drv.c ethernet-dev.c
+# -----------------------------------------
 
+# ----------------  Sources  ----------------
+# ethernet
+MODULES += core/net/eth
 
-CONTIKI_WITH_IPV6 = 1
-CONTIKI_WITH_RPL = 0
+# tools
+PROJECTDIRS += ./tools
+PROJECT_SOURCEFILES += sicslow_ethernet.c
 
+# enc28j60
+PROJECTDIRS += PLATFORM_ROOT_DIR/common
+PROJECT_SOURCEFILES += enc28j60_spi_arch.c
+MODULES += dev/enc28j60_revb
 
-# 0 - Sem optimização (-O0)
-# 1 - Optimização (-Os)
-# x - Optimização (-O2)
-SMALL=0
-
-
-
-
-
-
-# automatically build RESTful resources
+# RESTful resources
 REST_RESOURCES_DIR = ./resources
+PROJECTDIRS += $(REST_RESOURCES_DIR)
 ifndef TARGET
 REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))
 else
@@ -42,14 +38,16 @@ else
 REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c' ! -name 'res-plugtest*'))
 endif
 endif
-
-PROJECTDIRS += $(REST_RESOURCES_DIR)
 PROJECT_SOURCEFILES += $(REST_RESOURCES_FILES)
+# -----------------------------------------
 
-# REST Engine shall use Erbium CoAP implementation
-APPS += er-coap er-http
-APPS += rest-engine
+CONTIKI_WITH_IPV6 = 1
+CONTIKI_WITH_RPL = 0
+
+# 0 - No Optimisation: -O0
+# 1 - Optimisation:    -Os
+# x - Optimisation:    -O2
+SMALL=0
+
 
 include $(CONTIKI)/Makefile.include
-
-
