@@ -132,6 +132,10 @@ parse_post_param(char *buf, int buf_len, p_parse_pair_t key_pair, int len_user)
     	  if(len_user < 0 && buf_len - 1 < i){
     		  state = PARSE_POST_STATE_ERROR;
     	  }
+    	  /* last one */
+    	  else if(len_user < 0 && buf_len - 1 == i){
+    		  state = PARSE_POST_STATE_OK;
+    	  }
     	  else {
     		  state = PARSE_POST_STATE_MORE;
     	  }
@@ -146,6 +150,6 @@ parse_post_param(char *buf, int buf_len, p_parse_pair_t key_pair, int len_user)
     }
   }
 
-  return PARSE_POST_STATE_ERROR;
+  return state;
 }
 

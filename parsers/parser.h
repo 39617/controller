@@ -18,6 +18,7 @@
 #define PARSE_POST_STATE_MORE            1
 #define PARSE_POST_STATE_READING_KEY     2
 #define PARSE_POST_STATE_READING_VAL     3
+#define PARSE_POST_STATE_OK              0x4
 #define PARSE_POST_STATE_ERROR           0xFFFFFFFF
 
 
