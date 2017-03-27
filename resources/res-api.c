@@ -71,7 +71,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     } else {
         REST.set_response_status(response, 400);
         ((http_response *)response)->imediate_response = 1;
-        ((http_response *)response)->status_str = http_header_404;
+        ((http_response *)response)->status = http_header_404;
     }
 }
 

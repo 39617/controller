@@ -33,7 +33,6 @@ AUTOSTART_PROCESSES(&controller_process);
  */
 extern resource_t
   res_hello,
-  res_push,
   res_http_index,
   res_api;
 

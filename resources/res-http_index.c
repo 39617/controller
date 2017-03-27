@@ -37,8 +37,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 	const char *message = "{\"Tomada1\" : \"30Amperes\"}";
 	int length = 60;
 
-	REST.set_response_payload(response, message, length);
-	REST.set_header_content_type(response, REST.type.APPLICATION_JSON); /* text/plain is the default, hence this option could be omitted. */
+	REST.set_response_payload(request, message, length);
+	REST.set_header_content_type(request, REST.type.APPLICATION_JSON);
+	REST.set_response_status(request, REST.status.OK);
 }
 
 static void
@@ -53,6 +54,12 @@ res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t prefer
 	parse_post_param(packet, key_pair, 2);
 
 	//PRINTF("PARAM2 = %s - VAL = %s\n", key[0], value[0]);
+
+	const char *message = "{\"POST\" : \"PAYLOAD\"}";
+	int length = 21;
+	REST.set_response_payload(request, message, length);
+	REST.set_header_content_type(request, REST.type.APPLICATION_JSON);
+	REST.set_response_status(request, REST.status.OK);
 }
 
 
