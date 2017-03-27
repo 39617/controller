@@ -1,18 +1,13 @@
-#include "parser.h"
 #include "er-http.h"
 #include <stdlib.h>
 #include <ctype.h>
 
-/* POST request machine states */
-#define PARSE_POST_STATE_INIT            0
-#define PARSE_POST_STATE_MORE            1
-#define PARSE_POST_STATE_READING_KEY     2
-#define PARSE_POST_STATE_READING_VAL     3
-#define PARSE_POST_STATE_ERROR  0xFFFFFFFF
+#include "parser.h"
 
-static char key[PARSE_POST_BUF_SIZES];
-static char val_escaped[PARSE_POST_BUF_SIZES];
-static char val[PARSE_POST_BUF_SIZES];
+
+static char key[POST_PARAMS_KEY_MAX_LEN];
+static char val_escaped[POST_PARAMS_VAL_MAX_LEN];
+static char val[POST_PARAMS_VAL_MAX_LEN];
 static int key_len;
 static int val_len;
 static long state;
@@ -53,8 +48,8 @@ url_unescape(const char *src, size_t srclen, char *dst, size_t dstlen)
   return i == srclen;
 }
 
-void
-parse_post_request_chunk(char *buf, int buf_len, p_parse_pair_t key_pair, int len_user)
+size_t
+parse_post_param(char *buf, int buf_len, p_parse_pair_t key_pair, int len_user)
 {
 
   int i, counter = 0;
@@ -67,9 +62,9 @@ parse_post_request_chunk(char *buf, int buf_len, p_parse_pair_t key_pair, int le
       state = PARSE_POST_STATE_MORE;
     /* continue */
     case PARSE_POST_STATE_MORE:
-      memset(key, 0, PARSE_POST_BUF_SIZES);
-      memset(val, 0, PARSE_POST_BUF_SIZES);
-      memset(val_escaped, 0, PARSE_POST_BUF_SIZES);
+      memset(key, 0, POST_PARAMS_KEY_MAX_LEN);
+      memset(val, 0, POST_PARAMS_VAL_MAX_LEN);
+      memset(val_escaped, 0, POST_PARAMS_VAL_MAX_LEN);
       key_len = 0;
       val_len = 0;
       state = PARSE_POST_STATE_READING_KEY;
@@ -81,8 +76,8 @@ parse_post_request_chunk(char *buf, int buf_len, p_parse_pair_t key_pair, int le
         /* Don't accept an amp while reading a key */
         state = PARSE_POST_STATE_ERROR;
       } else {
-        /* Make sure we don't overshoot key's boundary */
-        if(key_len <= PARSE_POST_MAX_POS) {
+        /* Make sure we don't overshoot key's boundary - Don't forget the null terminator */
+        if(key_len < POST_PARAMS_KEY_MAX_LEN - 1) {
           key[key_len] = buf[i];
           key_len++;
         } else {
@@ -99,8 +94,8 @@ parse_post_request_chunk(char *buf, int buf_len, p_parse_pair_t key_pair, int le
         /* Don't accept an '=' while reading a val */
         state = PARSE_POST_STATE_ERROR;
       } else {
-        /* Make sure we don't overshoot key's boundary */
-        if(val_len <= PARSE_POST_MAX_POS) {
+        /* Make sure we don't overshoot key's boundary - Don't forget the null terminator */
+        if(val_len < POST_PARAMS_VAL_MAX_LEN - 1) {
           val[val_len] = buf[i];
           val_len++;
           /* Last character of the last chunk */
@@ -120,54 +115,37 @@ parse_post_request_chunk(char *buf, int buf_len, p_parse_pair_t key_pair, int le
          *
          * First, unescape the value.
          *
-         * Then invoke handlers. We will bail out with PARSE_POST_STATE_ERROR,
+         * Then copy them. We will bail out with PARSE_POST_STATE_ERROR,
          * unless the key-val gets correctly processed
          */
-        url_unescape(val, val_len, val_escaped, PARSE_POST_BUF_SIZES);
-        val_len = strlen(val_escaped);
-        PRINTF("key_len = %d\n", key_len);
-       // PRINTF("key = %s - VAL = %s\n", key, val_escaped);
-        memcpy(key_pair[counter].key, key, key_len);
-        key_pair[counter].key[key_len] = '\0';
+    	  url_unescape(val, val_len, val_escaped, POST_PARAMS_VAL_MAX_LEN);
+    	  val_len = strlen(val_escaped);
+    	  memcpy(key_pair[counter].key, key, key_len);
+    	  key_pair[counter].key[key_len] = '\0';
 
+    	  memcpy(key_pair[counter].value, val_escaped, val_len);
+    	  key_pair[counter].value[val_len] = '\0';
 
+    	  counter++;
+    	  len_user--;
 
-        memcpy(key_pair[counter].value, val_escaped, val_len);
-        key_pair[counter].value[val_len] = '\0';
-
-        PRINTF("key = %s - VAL = %s\n", key_pair[counter].key, key_pair[counter].value);
-        counter++;
-        len_user--;
-
-        if(len_user < 0 && buf_len - 1 < i){
-        	state = PARSE_POST_STATE_ERROR;
-        }
-        else
-        	state = PARSE_POST_STATE_MORE;
+    	  if(len_user < 0 && buf_len - 1 < i){
+    		  state = PARSE_POST_STATE_ERROR;
+    	  }
+    	  else {
+    		  state = PARSE_POST_STATE_MORE;
+    	  }
 
       }
       break;
     case PARSE_POST_STATE_ERROR:
       /* If we entered the error state earlier, do nothing */
-      return;
+      return PARSE_POST_STATE_ERROR;
     default:
       break;
     }
   }
-  //(char *buf, int buf_len, int last_chunk)
-  //PRINTF("Fim do Post! => chave=%s <-> valor=%s || length = %d || state = %ld\n", key, val, buf_len, state);
+
+  return PARSE_POST_STATE_ERROR;
 }
 
-void parse_post_param(httpd_state *s, p_parse_pair_t key_pair, int len_user){
-	parse_post_request_chunk(s->buffer, s->response.content_length, key_pair, len_user);
-
-
-	/*if(state == PARSE_POST_STATE_ERROR) {
-		s->return_code = RETURN_CODE_BR;
-	}
-
-    if(s->return_code == RETURN_CODE_OK && state != PARSE_POST_STATE_MORE) {
-    	PRINTF("Bad Request: Line 573\n");
-      s->return_code = RETURN_CODE_BR;
-    }*/
-}

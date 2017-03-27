@@ -8,12 +8,17 @@
 #define DEBUG 1
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
-#define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
-#define PRINTLLADDR(lladdr) PRINTF("[%02x:%02x:%02x:%02x:%02x:%02x]", (lladdr)->addr[0], (lladdr)->addr[1], (lladdr)->addr[2], (lladdr)->addr[3], (lladdr)->addr[4], (lladdr)->addr[5])
+#define PRINT_ARRAY(str, len) \
+	do { \
+		for(i = 0; i < len; i++) { \
+			PRINTF("%c", *(str)); \
+			(str) = ((str) + 1); \
+		} \
+	} \
+	while(0)
 #else
 #define PRINTF(...)
-#define PRINT6ADDR(addr)
-#define PRINTLLADDR(addr)
+#define PRINT_ARRAY(...)
 #endif
 
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
@@ -45,19 +50,51 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 static void
 res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-	http_packet_t *packet = (http_packet_t *)request;
-	PRINTF("POST PAYLOAD: %s\n", packet->buffer);
+	httpd_state *packet = (httpd_state *)request;
+	//PRINTF("POST PAYLOAD: %s\n", packet->buffer);
+#if DEBUG
+	PRINTF("* POST PAYLOAD\n");
+	char * ptr = (char *)&packet->buffer;
+	int i;
+	PRINT_ARRAY(ptr, packet->content_length);
+	PRINTF("\n");
+#endif
+
 	parse_pair_t key_pair[2];
-	//char key[2][200];
-	//char value[2][200];
+	size_t ret = parse_post_param(packet->buffer, packet->content_length, (p_parse_pair_t)&key_pair, 2);
+	if(ret == PARSE_POST_STATE_ERROR) {
+		REST.set_header_content_type(request, REST.type.TEXT_HTML);
+		REST.set_response_status(request, REST.status.BAD_REQUEST);
+		return;
+	}
 
-	parse_post_param(packet, key_pair, 2);
+#if DEBUG
+	PRINTF("Key.0: %s", key_pair[0].key);
+	PRINTF("Value.0: %s", key_pair[0].value);
+	PRINTF("Key.1: %s", key_pair[1].key);
+	PRINTF("Value.1: %s", key_pair[1].value);
+//	ptr = (char *)&key_pair[0].key;
+//	PRINTF("Key.0: ");
+//	PRINT_ARRAY(ptr, 10);
+//	PRINTF(" ** ");
+//	ptr = (char *)&key_pair[0].value;
+//	PRINTF("Value.0: ");
+//	PRINT_ARRAY(ptr, 10);
+//	//
+//	ptr = (char *)&key_pair[1].key;
+//	PRINTF("\nKey.1: ");
+//	PRINT_ARRAY(ptr, 10);
+//	PRINTF(" ** ");
+//	ptr = (char *)&key_pair[1].value;
+//	PRINTF("Value.1: ");
+//	PRINT_ARRAY(ptr, 10);
+//	//
+//	PRINTF("\n");
+#endif
 
-	//PRINTF("PARAM2 = %s - VAL = %s\n", key[0], value[0]);
-
-	const char *message = "{\"POST\" : \"PAYLOAD\"}";
-	int length = 21;
-	REST.set_response_payload(request, message, length);
+//	const char *message = "{\"POST\" : \"PAYLOAD\"}";
+//	int length = 21;
+//	REST.set_response_payload(request, message, length);
 	REST.set_header_content_type(request, REST.type.APPLICATION_JSON);
 	REST.set_response_status(request, REST.status.OK);
 }
