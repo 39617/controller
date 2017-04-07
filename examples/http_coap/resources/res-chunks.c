@@ -53,7 +53,7 @@ RESOURCE(res_chunks,
          res_get_handler,
          NULL,
          NULL,
-         NULL);
+         NULL,0);
 
 #define CHUNKS_TOTAL    2050
 

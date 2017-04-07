@@ -90,15 +90,6 @@ static int key_len;
 static int val_len;
 static int state;
 /*---------------------------------------------------------------------------*/
-/* Stringified min/max intervals */
-#define STRINGIFY(x) XSTR(x)
-#define XSTR(x)      #x
-
-#define RSSI_INT_MAX STRINGIFY(CC26XX_WEB_DEMO_RSSI_MEASURE_INTERVAL_MAX)
-#define RSSI_INT_MIN STRINGIFY(CC26XX_WEB_DEMO_RSSI_MEASURE_INTERVAL_MIN)
-#define PUB_INT_MAX  STRINGIFY(MQTT_CLIENT_PUBLISH_INTERVAL_MAX)
-#define PUB_INT_MIN  STRINGIFY(MQTT_CLIENT_PUBLISH_INTERVAL_MIN)
-/*---------------------------------------------------------------------------*/
 /*
  * We can only handle a single POST request at a time. Since a second POST
  * request cannot interrupt us while obtaining a lock, we don't really need
@@ -128,10 +119,6 @@ PROCESS(httpd_process, "CC26XX Web Server");
 #define HTTP_503_SU "HTTP/1.0 503 Service Unavailable\r\n"
 #define CONN_CLOSE  "Connection: close\r\n"
 /*---------------------------------------------------------------------------*/
-#define SECTION_TAG   "div"
-#define SECTION_OPEN  "<" SECTION_TAG ">"
-#define SECTION_CLOSE "</" SECTION_TAG ">"
-
 #define CONTENT_OPEN  "<pre>"
 #define CONTENT_CLOSE "</pre>"
 /*---------------------------------------------------------------------------*/
@@ -171,31 +158,14 @@ static const char *http_header_con_close[] = {
   NULL
 };
 
-static const char http_head_charset[] = "<meta charset=\"UTF-8\">";
-static const char http_title_start[] = "<title>";
-static const char http_title_end[] = "</title>";
-static const char http_head_end[] = "</head>";
-static const char http_body_start[] = "<body>";
-static const char http_bottom[] = "</body></html>";
-/*---------------------------------------------------------------------------*/
 static const char http_content_type_html[] = "text/html";
 static const char http_content_type_plain[] = "text/plain";
+
 /*---------------------------------------------------------------------------*/
-static char generate_index(struct httpd_state *s);
-/*---------------------------------------------------------------------------*/
-static page_t http_index_page = {
-  NULL,
-  "index.html",
-  "Index",
-  generate_index,
-};
-/*---------------------------------------------------------------------------*/
-static uint16_t numtimes;
 static const httpd_simple_post_handler_t *handler;
 /*---------------------------------------------------------------------------*/
 
 LIST(post_handlers);
-LIST(pages_list);
 MEMB(conns, struct httpd_state, CONNS);
 /*---------------------------------------------------------------------------*/
 #define HEX_TO_INT(x)  (isdigit(x) ? x - '0' : x - 'W')
@@ -206,33 +176,6 @@ static service_callback_t service_cbk = NULL;
 void http_set_service_callback(service_callback_t callback) {
 	service_cbk = callback;
 }
-
-int
-cc26xx_web_demo_ipaddr_sprintf(char *buf, uint8_t buf_len,
-                               const uip_ipaddr_t *addr)
-{
-  uint16_t a;
-  uint8_t len = 0;
-  int i, f;
-  for(i = 0, f = 0; i < sizeof(uip_ipaddr_t); i += 2) {
-    a = (addr->u8[i] << 8) + addr->u8[i + 1];
-    if(a == 0 && f >= 0) {
-      if(f++ == 0) {
-        len += snprintf(&buf[len], buf_len - len, "::");
-      }
-    } else {
-      if(f > 0) {
-        f = -1;
-      } else if(i > 0) {
-        len += snprintf(&buf[len], buf_len - len, ":");
-      }
-      len += snprintf(&buf[len], buf_len - len, "%x", a);
-    }
-  }
-
-  return len;
-}
-
 static size_t
 url_unescape(const char *src, size_t srclen, char *dst, size_t dstlen)
 {
@@ -305,134 +248,8 @@ PT_THREAD(enqueue_chunk(struct httpd_state *s, uint8_t immediate,
 
   PSOCK_END(&s->sout);
 }
-/*---------------------------------------------------------------------------*/
-static
-PT_THREAD(generate_top_matter(struct httpd_state *s, const char *title,
-                              const char **css))
-{
-
-  PT_BEGIN(&s->top_matter_pt);
-
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_doctype));
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_html_start));
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_title_start));
-
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, title));
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_title_end));
-
-  if(css != NULL) {
-    for(s->ptr = css; *(s->ptr) != NULL; s->ptr++) {
-      PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, *(s->ptr)));
-    }
-  }
-
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_head_charset));
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_head_end));
-  PT_WAIT_THREAD(&s->top_matter_pt, enqueue_chunk(s, 0, http_body_start));
-
-  /* Links */
-  PT_WAIT_THREAD(&s->top_matter_pt,
-                 enqueue_chunk(s, 0, SECTION_OPEN "<p>"));
-
-  s->page = list_head(pages_list);
-  PT_WAIT_THREAD(&s->top_matter_pt,
-                 enqueue_chunk(s, 0, "[ <a href=\"%s\">%s</a> ]",
-                               s->page->filename, s->page->title));
-
-  for(s->page = s->page->next; s->page != NULL; s->page = s->page->next) {
-    PT_WAIT_THREAD(&s->top_matter_pt,
-                   enqueue_chunk(s, 0, " | [ <a href=\"%s\">%s</a> ]",
-                                 s->page->filename, s->page->title));
-  }
-
-  PT_WAIT_THREAD(&s->top_matter_pt,
-                 enqueue_chunk(s, 0, "</p>" SECTION_CLOSE));
-
-  PT_END(&s->top_matter_pt);
-}
-/*---------------------------------------------------------------------------*/
-static
-PT_THREAD(generate_index(struct httpd_state *s))
-{
-  char ipaddr_buf[IPADDR_BUF_LEN]; /* Intentionally on stack */
-
-  PT_BEGIN(&s->generate_pt);
-
-  /* Generate top matter (doctype, title, nav links etc) */
-  PT_WAIT_THREAD(&s->generate_pt,
-                 generate_top_matter(s, http_index_page.title, NULL));
-
-  /* ND Cache */
-  PT_WAIT_THREAD(&s->generate_pt,
-                 enqueue_chunk(s, 0, SECTION_OPEN "Neighbors" CONTENT_OPEN));
-
-  for(s->nbr = nbr_table_head(ds6_neighbors); s->nbr != NULL;
-      s->nbr = nbr_table_next(ds6_neighbors, s->nbr)) {
-
-    PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "\n"));
-
-    memset(ipaddr_buf, 0, IPADDR_BUF_LEN);
-    cc26xx_web_demo_ipaddr_sprintf(ipaddr_buf, IPADDR_BUF_LEN, &s->nbr->ipaddr);
-    PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "%s", ipaddr_buf));
-  }
-
-  PT_WAIT_THREAD(&s->generate_pt,
-                 enqueue_chunk(s, 0, CONTENT_CLOSE SECTION_CLOSE));
-
-  /* Default Route */
-  PT_WAIT_THREAD(&s->generate_pt,
-                 enqueue_chunk(s, 0,
-                               SECTION_OPEN "Default Route" CONTENT_OPEN));
-
-  memset(ipaddr_buf, 0, IPADDR_BUF_LEN);
-  cc26xx_web_demo_ipaddr_sprintf(ipaddr_buf, IPADDR_BUF_LEN,
-                                 uip_ds6_defrt_choose());
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "%s", ipaddr_buf));
-
-  PT_WAIT_THREAD(&s->generate_pt,
-                 enqueue_chunk(s, 0, CONTENT_CLOSE SECTION_CLOSE));
-
-  /* Routes */
-  PT_WAIT_THREAD(&s->generate_pt,
-                 enqueue_chunk(s, 0, SECTION_OPEN "Routes" CONTENT_OPEN));
-
-  for(s->r = uip_ds6_route_head(); s->r != NULL;
-      s->r = uip_ds6_route_next(s->r)) {
-    PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "\n"));
-
-    memset(ipaddr_buf, 0, IPADDR_BUF_LEN);
-    cc26xx_web_demo_ipaddr_sprintf(ipaddr_buf, IPADDR_BUF_LEN, &s->r->ipaddr);
-    PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "%s", ipaddr_buf));
-
-    PT_WAIT_THREAD(&s->generate_pt,
-                   enqueue_chunk(s, 0, " / %u via ", s->r->length));
-
-    memset(ipaddr_buf, 0, IPADDR_BUF_LEN);
-    cc26xx_web_demo_ipaddr_sprintf(ipaddr_buf, IPADDR_BUF_LEN,
-                                   uip_ds6_route_nexthop(s->r));
-    PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "%s", ipaddr_buf));
-
-    PT_WAIT_THREAD(&s->generate_pt,
-                   enqueue_chunk(s, 0,
-                                 ", lifetime=%lus", s->r->state.lifetime));
-  }
-
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0,
-                                                CONTENT_CLOSE SECTION_CLOSE));
 
 
-  /* Footer */
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, SECTION_OPEN));
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "Page hits: %u<br>",
-                                                ++numtimes));
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, "Uptime: %lu secs<br>",
-                                                clock_seconds()));
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 0, SECTION_CLOSE));
-
-  PT_WAIT_THREAD(&s->generate_pt, enqueue_chunk(s, 1, http_bottom));
-
-  PT_END(&s->generate_pt);
-}
 /*---------------------------------------------------------------------------*/
 static void
 lock_obtain(struct httpd_state *s)
@@ -548,7 +365,7 @@ parse_post_request_chunk(char *buf, int buf_len, int last_chunk)
   }
 }
 /*---------------------------------------------------------------------------*/
-static httpd_simple_script_t
+/*static httpd_simple_script_t
 get_script(const char *name)
 {
   page_t *page;
@@ -561,7 +378,7 @@ get_script(const char *name)
   }
 
   return NULL;
-}
+}*/
 /*---------------------------------------------------------------------------*/
 static
 PT_THREAD(send_string(struct httpd_state *s, const char *str))
@@ -572,7 +389,7 @@ PT_THREAD(send_string(struct httpd_state *s, const char *str))
 
   PSOCK_END(&s->sout);
 }
-/*---------------------------------------------------------------------------*/
+
 static
 PT_THREAD(send_headers(struct httpd_state *s, const char *statushdr,
                        const char *content_type, const char *redir,
@@ -610,13 +427,13 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
 {
   PT_BEGIN(&s->outputpt);
 
-  s->script = NULL;
 
-  PT_INIT(&s->generate_pt);
-  PT_INIT(&s->top_matter_pt);
+  //PT_INIT(&s->generate_pt);
+  //PT_INIT(&s->top_matter_pt);
 
   if(s->request_type == REQUEST_TYPE_POST) {
-    if(s->return_code == RETURN_CODE_OK) {
+	  //TODO ver como e que lidadmos com esta resposta
+    /*if(s->return_code == RETURN_CODE_OK) {
       PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_302,
                                                 http_content_type_plain,
                                                 s->filename,
@@ -645,20 +462,20 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
                                                 NULL,
                                                 http_header_con_close));
       PT_WAIT_THREAD(&s->outputpt, send_string(s, "Bad Request\n"));
-    }
+    }*/
   } else if(s->request_type == REQUEST_TYPE_GET) {
 	  printf("***** GET\n");
-	  s->script = get_script(&s->filename[1]);
+	  //s->script = get_script(&s->filename[1]);
 
 	  // File not found
-    if(s->script != NULL) {
+    /*if(s->script != NULL) {
         PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_200,
                                                   http_content_type_html,
                                                   NULL,
                                                   http_header_con_close));
-        PT_WAIT_THREAD(&s->outputpt, s->script(s));
-    } else if(resourse_found) {
-    	printf("***** Resourse Found!\n");
+        PT_WAIT_THREAD(&s->outputpt, s->script(s));*/
+    /*}else*/  if(resourse_found) {
+    	printf("***** Resource Found!\n");
     	// TODO: passar a utilizar o content-type que está no "s"
         PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_200,
                                                   http_content_type_html,
@@ -668,7 +485,6 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
                        enqueue_chunk(s, 1, s->response.buf));
 
     }else {
-		strncpy(s->filename, "/notfound.html", sizeof(s->filename));
 		PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_404,
 												http_content_type_html,
 												NULL,
@@ -679,7 +495,6 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
 		PT_EXIT(&s->outputpt);
     }
   }
-  s->script = NULL;
   PSOCK_CLOSE(&s->sout);
   PT_END(&s->outputpt);
 }
@@ -704,11 +519,10 @@ PT_THREAD(handle_input(struct httpd_state *s))
     memcpy(&s->uri, &s->inputbuf, s->uri_len);
 
     if(s->inputbuf[1] == ISO_space) {
-      strncpy(s->filename, http_index_html, sizeof(s->filename));
+    	// ???
     } else {
     	// TODO: filename load need to be improved
       s->inputbuf[PSOCK_DATALEN(&s->sin) - 1] = 0;
-      strncpy(s->filename, s->inputbuf, sizeof(s->filename));
     }
   } else if(strncasecmp(s->inputbuf, http_post, 5) == 0) {
     s->request_type = REQUEST_TYPE_POST;
@@ -719,7 +533,7 @@ PT_THREAD(handle_input(struct httpd_state *s))
     }
 
     s->inputbuf[PSOCK_DATALEN(&s->sin) - 1] = 0;
-    strncpy(s->filename, s->inputbuf, sizeof(s->filename));
+
 
     /* POST: Read out the rest of the line and ignore it */
     PSOCK_READTO(&s->sin, ISO_nl);
@@ -812,6 +626,11 @@ handle_connection(struct httpd_state *s)
   if(s->state == STATE_OUTPUT) {
 	rest_select_if(HTTP_IF);
 	int res_found = service_cbk(s, &s->response, s->response.buf, 0, 0);
+
+	/*typedef int (*service_callback_t)(void *request, void *response,
+	                                  uint8_t *buffer, uint16_t preferred_size,
+	                                  int32_t *offset);*/
+
 //	printf("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||| Resource Found: %d\n", res_found);
 //	printf("||||||||||||||||||||||||||||||||||||||||||||||||||||||| LEN: %d\n", s->response.blen);
 //	int i;
@@ -831,7 +650,7 @@ appcall(void *state)
 
   if(uip_closed() || uip_aborted() || uip_timedout()) {
     if(s != NULL) {
-      s->script = NULL;
+      //s->script = NULL;
       s->blen = 0;
       s->tmp_buf_len = 0;
       s->response.blen = 0;
@@ -846,8 +665,8 @@ appcall(void *state)
     tcp_markconn(uip_conn, s);
     PSOCK_INIT(&s->sin, (uint8_t *)s->inputbuf, sizeof(s->inputbuf) - 1);
     PSOCK_INIT(&s->sout, (uint8_t *)s->inputbuf, sizeof(s->inputbuf) - 1);
-    PT_INIT(&s->outputpt);
-    s->script = NULL;
+    //PT_INIT(&s->outputpt);
+
     s->state = STATE_WAITING;
     timer_set(&s->timer, CLOCK_SECOND * 10);
     handle_connection(s);
@@ -855,7 +674,6 @@ appcall(void *state)
     if(uip_poll()) {
       if(timer_expired(&s->timer)) {
         uip_abort();
-        s->script = NULL;
         memb_free(&conns, s);
       }
     } else {
@@ -874,7 +692,7 @@ init(void)
   tcp_listen(UIP_HTONS(80));
   memb_init(&conns);
 
-  list_add(pages_list, &http_index_page);
+  //list_add(pages_list, &http_index_page);
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(httpd_process, ev, data)

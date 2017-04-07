@@ -11,14 +11,14 @@ RESOURCE(res_http_index,
 		  res_get_handler,
 		  NULL,
 		  NULL,
-		  NULL);
+		  NULL, 1);
 
 
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
 
-	const char *len = NULL;
+	//const char *len = NULL;
 	/* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
 	const char *message = "HTTTP Index static text\n";
 	int length = 24;

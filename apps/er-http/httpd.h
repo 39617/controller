@@ -89,18 +89,8 @@ typedef struct httpd_simple_post_handler {
 
 
 /*---------------------------------------------------------------------------*/
-struct httpd_state;
-typedef char (*httpd_simple_script_t)(struct httpd_state *s);
-
-typedef struct page {
-  struct page *next;
-  char *filename;
-  char *title;
-  char (*script)(struct httpd_state *s);
-} page_t;
-
 typedef struct http_response_t {
-	char buf[HTTPD_SIMPLE_MAIN_BUF_SIZE];
+	uint8_t buf[HTTPD_SIMPLE_MAIN_BUF_SIZE];
 	int blen;
 	uint16_t content_type;
 } http_response;
@@ -108,30 +98,26 @@ typedef struct http_response_t {
 /*---------------------------------------------------------------------------*/
 /* http request struct */
 struct httpd_state {
-  char buf[HTTPD_SIMPLE_MAIN_BUF_SIZE];
+  uint8_t buf[HTTPD_SIMPLE_MAIN_BUF_SIZE];
   char tmp_buf[TMP_BUF_SIZE];
   struct timer timer;
   struct psock sin, sout;
-  int blen;
+
   const char **ptr;
-  //const cc26xx_web_demo_sensor_reading_t *reading;
-  const int *reading; // pagar?
-  const page_t *page;
-  uip_ds6_route_t *r; // apagar?
-  uip_ds6_nbr_t *nbr; // apagar?
-  httpd_simple_script_t script;
   int content_length;
-  // uri
-  size_t uri_len;
-  char uri[MAX_URI_LEN];
-  //
+
+  size_t uri_len; 				/*!< uri-length >*/
+  char uri[MAX_URI_LEN]; 		/* uri-name */
+
+  int blen;
   int tmp_buf_len;
   int tmp_buf_copied;
-  char filename[HTTPD_PATHLEN];
+
   char inputbuf[HTTPD_INBUF_LEN];
-  struct pt outputpt;
-  struct pt generate_pt; // apagar?
-  struct pt top_matter_pt; // apagar?
+
+  struct pt outputpt; //usada para gerar o output
+  struct pt generate_pt; //usada para fazer headers
+
   char state;
   char request_type;
   char return_code;

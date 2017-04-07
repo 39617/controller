@@ -64,7 +64,7 @@ RESOURCE(res_leds,
          NULL,
          res_post_put_handler,
          res_post_put_handler,
-         NULL);
+         NULL,0);
 
 static void
 res_post_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
