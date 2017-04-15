@@ -205,5 +205,5 @@ well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
 }
 /*---------------------------------------------------------------------------*/
 RESOURCE(res_well_known_core, "ct=40", well_known_core_get_handler, NULL,
-         NULL, NULL, 0);
+         NULL, NULL);
 /*---------------------------------------------------------------------------*/

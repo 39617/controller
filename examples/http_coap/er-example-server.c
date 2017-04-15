@@ -121,7 +121,7 @@ AUTOSTART_PROCESSES(&er_example_server);
 
 PROCESS_THREAD(er_example_server, ev, data)
 {
-	static struct etimer et;
+  static struct etimer et;
 
   PROCESS_BEGIN();
   prefix_set = 0;
@@ -132,12 +132,10 @@ PROCESS_THREAD(er_example_server, ev, data)
   while(!prefix_set) {
     etimer_set(&et, CLOCK_SECOND);
     request_prefix();
-    PRINTF("PRESO!");
+    PRINTF("\nWaiting for Prefix!\n");
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
   }
   print_local_addresses();
-  PRINTF("PASSOU");
 
   /* Initialize the REST engine. */
   rest_init_engine();
@@ -147,16 +145,17 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
+  /* Duplicar o mesmo resource implica funcionar apenas o ultimo */
   rest_activate_resource(&res_hello, "test/hello");
 /*  rest_activate_resource(&res_mirror, "debug/mirror"); */
 /*  rest_activate_resource(&res_chunks, "test/chunks"); */
 /*  rest_activate_resource(&res_separate, "test/separate"); */
-  rest_activate_resource(&res_push, "test/push");
+  //rest_activate_resource(&res_push, "test/push");
 /*  rest_activate_resource(&res_event, "sensors/button"); */
 /*  rest_activate_resource(&res_sub, "test/sub"); */
 /*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
-
-  rest_activate_resource(&res_http_index, "/index");
+  rest_activate_resource(&res_http_index, "/");
+  //rest_activate_resource(&res_http_index, "/index");
 
   /* Define application-specific events here. */
   while(1) {

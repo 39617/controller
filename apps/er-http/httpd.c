@@ -54,7 +54,7 @@
 #include <stddef.h>
 #include <ctype.h>
 
-#include "httpd.h"
+#include "er-http.h"
 /*---------------------------------------------------------------------------*/
 #define SEND_STRING(s, str) PSOCK_SEND(s, (uint8_t *)str, strlen(str))
 /*---------------------------------------------------------------------------*/
@@ -170,7 +170,6 @@ MEMB(conns, struct httpd_state, CONNS);
 /*---------------------------------------------------------------------------*/
 #define HEX_TO_INT(x)  (isdigit(x) ? x - '0' : x - 'W')
 
-
 static service_callback_t service_cbk = NULL;
 
 void http_set_service_callback(service_callback_t callback) {
@@ -201,12 +200,8 @@ url_unescape(const char *src, size_t srclen, char *dst, size_t dstlen)
   return i == srclen;
 }
 /*---------------------------------------------------------------------------*/
-void
-httpd_simple_register_post_handler(httpd_simple_post_handler_t *h)
-{
-  list_add(post_handlers, h);
-}
-/*---------------------------------------------------------------------------*/
+
+/* Envia Bocados */
 static
 PT_THREAD(enqueue_chunk(struct httpd_state *s, uint8_t immediate,
                         const char *format, ...))
@@ -221,8 +216,8 @@ PT_THREAD(enqueue_chunk(struct httpd_state *s, uint8_t immediate,
 
   va_end(ap);
 
-  printf("********************* Enqueue Chunk blen: %d\n", s->blen);
-  printf("********************* Enqueue Chunk tmp_buf_len: %d\n", s->tmp_buf_len);
+  //printf("********************* Enqueue Chunk blen: %d\n", s->blen);
+  //printf("********************* Enqueue Chunk tmp_buf_len: %d\n", s->tmp_buf_len);
 
   if(s->blen + s->tmp_buf_len < HTTPD_SIMPLE_MAIN_BUF_SIZE) {
     /* Enough space for the entire chunk. Copy over */
@@ -365,21 +360,6 @@ parse_post_request_chunk(char *buf, int buf_len, int last_chunk)
   }
 }
 /*---------------------------------------------------------------------------*/
-/*static httpd_simple_script_t
-get_script(const char *name)
-{
-  page_t *page;
-
-  for(page = list_head(pages_list); page != NULL;
-      page = list_item_next(page)) {
-    if(strncmp(name, page->filename, strlen(page->filename)) == 0) {
-      return page->script;
-    }
-  }
-
-  return NULL;
-}*/
-/*---------------------------------------------------------------------------*/
 static
 PT_THREAD(send_string(struct httpd_state *s, const char *str))
 {
@@ -433,38 +413,40 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
 
   if(s->request_type == REQUEST_TYPE_POST) {
 	  //TODO ver como e que lidadmos com esta resposta
-    /*if(s->return_code == RETURN_CODE_OK) {
+    if(s->return_code == RETURN_CODE_OK) {
+    	/* TODO: Neste caso temos que dar um novo sitio para redirecionar */
       PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_302,
-                                                http_content_type_plain,
-                                                s->filename,
+                                                s->response.content_type,
+                                                NULL,
                                                 NULL));
     } else if(s->return_code == RETURN_CODE_LR) {
       PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_411,
-                                                http_content_type_plain,
+					   	   	   	   	   	   	    s->response.content_type,
                                                 NULL,
                                                 http_header_con_close));
       PT_WAIT_THREAD(&s->outputpt, send_string(s, "Content-Length Required\n"));
     } else if(s->return_code == RETURN_CODE_TL) {
       PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_413,
-                                                http_content_type_plain,
+    		  	  	  	  	  	  	  	  	  	s->response.content_type,
                                                 NULL,
                                                 http_header_con_close));
       PT_WAIT_THREAD(&s->outputpt, send_string(s, "Content-Length too Large\n"));
     } else if(s->return_code == RETURN_CODE_SU) {
       PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_503,
-                                                http_content_type_plain,
+											    s->response.content_type,
                                                 NULL,
                                                 http_header_con_close));
       PT_WAIT_THREAD(&s->outputpt, send_string(s, "Service Unavailable\n"));
     } else {
       PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_400,
-                                                http_content_type_plain,
+    		  	  	  	  	  	  	  	  	    s->response.content_type,
                                                 NULL,
                                                 http_header_con_close));
       PT_WAIT_THREAD(&s->outputpt, send_string(s, "Bad Request\n"));
-    }*/
+    }
   } else if(s->request_type == REQUEST_TYPE_GET) {
 	  printf("***** GET\n");
+	  printf("Content-Type: %s\n", s->response.content_type);
 	  //s->script = get_script(&s->filename[1]);
 
 	  // File not found
@@ -478,7 +460,7 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
     	printf("***** Resource Found!\n");
     	// TODO: passar a utilizar o content-type que está no "s"
         PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_200,
-                                                  http_content_type_html,
+                                                  s->response.content_type,
                                                   NULL,
                                                   http_header_con_close));
         PT_WAIT_THREAD(&s->outputpt,
@@ -486,7 +468,7 @@ PT_THREAD(handle_output(struct httpd_state *s, int resourse_found))
 
     }else {
 		PT_WAIT_THREAD(&s->outputpt, send_headers(s, http_header_404,
-												http_content_type_html,
+												s->response.content_type,
 												NULL,
 												http_header_con_close));
 		PT_WAIT_THREAD(&s->outputpt,
@@ -505,7 +487,6 @@ PT_THREAD(handle_input(struct httpd_state *s))
   PSOCK_BEGIN(&s->sin);
 
   PSOCK_READTO(&s->sin, ISO_space);
-
   if(strncasecmp(s->inputbuf, http_get, 4) == 0) {
     s->request_type = REQUEST_TYPE_GET;
     PSOCK_READTO(&s->sin, ISO_space);
@@ -572,6 +553,7 @@ PT_THREAD(handle_input(struct httpd_state *s))
 
     if(s->return_code == RETURN_CODE_OK) {
       /* Acceptable Content Length. Try to obtain a lock */
+    	//TODO boa pergunta para o mestre claudio
       lock_obtain(s);
 
       if(lock == s) {

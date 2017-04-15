@@ -9,7 +9,7 @@
 
 #include "er-http.h"
 #include "er-coap.h"   // TODO: Esta aqui só para as constantes e enums no rest interface
-#include "httpd.h"
+#include "er-http.h"
 
 
 #define DEBUG 1
@@ -35,7 +35,7 @@ int http_get_header_uri_path(void *request, const char **path) {
 	const struct httpd_state *http_s = (struct httpd_state *)request;
 	*path = http_s->uri;
 
-	return http_s->uri_len;;
+	return http_s->uri_len;
 }
 
 /** Get the method of a request. */

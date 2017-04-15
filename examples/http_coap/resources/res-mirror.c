@@ -60,7 +60,7 @@ RESOURCE(res_mirror,
          res_any_handler,
          res_any_handler,
          res_any_handler,
-         res_any_handler,0);
+         res_any_handler);
 
 static void
 res_any_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
