@@ -12,12 +12,6 @@
 #include "controller.h"
 #include "rest-engine.h"
 
-#define COOJA 1
-
-#ifdef DEBUG_COOJA
-#include "slip.h" // COOJA Only
-#endif
-
 #define DEBUG 1
 #ifdef DEBUG
 #include "net/ip/uip-debug.h"
@@ -31,31 +25,6 @@ static uip_ipaddr_t prefix;	// COOJA Only
 PROCESS(controller_process, "Controller process");
 AUTOSTART_PROCESSES(&controller_process);
 
-#ifdef DEBUG_COOJA
-/* ***********************COOJA******************************/
-void
-request_prefix(void)
-{
-  /* mess up uip_buf with a dirty request... */
-  uip_buf[0] = '?';
-  uip_buf[1] = 'P';
-  uip_len = 2;
-  slip_send();
-  uip_len = 0;
-}
-
-void
-set_prefix_64(uip_ipaddr_t *prefix_64)
-{
-  uip_ipaddr_t ipaddr;
-  memcpy(&prefix, prefix_64, 16);
-  memcpy(&ipaddr, prefix_64, 16);
-  prefix_set = 1;
-  uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
-  uip_ds6_addr_add(&ipaddr, 0, 1);
-}
-/* ***********************END*COOJA***************************/
-#endif
 /*
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
@@ -111,22 +80,8 @@ PROCESS_THREAD(controller_process, ev, data)
 
 	static struct etimer et;
 
-#ifndef DEBUG_COOJA
 	uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
-#else
 
-	/* COOJA */
-
-	prefix_set = 0;
-
-	while(!prefix_set) {
-		etimer_set(&et, CLOCK_SECOND);
-		request_prefix();
-		PRINTF("\nWaiting for Prefix!\n");
-		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-	}
-	/* END COOJA */
-#endif
 	print_local_addresses();
 
 	/* Initialize the REST engine. */
