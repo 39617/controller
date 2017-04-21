@@ -11,6 +11,7 @@
 
 #include "controller.h"
 #include "rest-engine.h"
+#include "er-http.h"
 
 #define DEBUG 1
 #ifdef DEBUG
