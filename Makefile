@@ -14,6 +14,9 @@ CFLAGS += -g
 # -----------------------------------------
 
 # ----------------  Sources  ----------------
+#
+PROJECT_SOURCEFILES += coap_client.c
+
 # ethernet
 MODULES += core/net/eth
 
@@ -25,6 +28,9 @@ PROJECT_SOURCEFILES += sicslow_ethernet.c
 PROJECTDIRS += PLATFORM_ROOT_DIR/common
 PROJECT_SOURCEFILES += enc28j60_spi_arch.c
 MODULES += dev/enc28j60_revb
+
+# parser
+PARSERS_DIR = ./parsers
 
 # RESTful resources
 REST_RESOURCES_DIR = ./resources
@@ -39,6 +45,10 @@ REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c' !
 endif
 endif
 PROJECT_SOURCEFILES += $(REST_RESOURCES_FILES)
+PARSERS_FILES = $(notdir $(shell find $(PARSERS_DIR) -name '*.c'))
+
+PROJECTDIRS += $(PARSERS_DIR)
+PROJECT_SOURCEFILES += $(PARSERS_FILES)
 # -----------------------------------------
 
 CONTIKI_WITH_IPV6 = 1

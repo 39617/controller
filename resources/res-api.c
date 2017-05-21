@@ -4,6 +4,9 @@
 #include "rest-engine.h"
 #include "er-http.h"
 #include "parser.h"
+#include "controller.h"
+#include "er-coap-engine.h"
+#include "coap_client.h"
 
 #define DEBUG 1
 #if DEBUG
@@ -19,41 +22,52 @@
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
+RESOURCE_HTTP(res_api,
+          "title=\"HTTP API\";obs",
+          res_get_handler,
+          res_post_handler,
+          NULL,
+          NULL);
 
-RESOURCE_HTTP(res_http_index,
-		  "title=\"HTTP Index\";obs",
-		  res_get_handler,
-		  res_post_handler,
-		  NULL,
-		  NULL);
 
+extern address_table_t addr_table[50];
 
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
+    size_t len_value = 0;
+    const char *target = NULL;
+    const char *action = NULL;
 
-	//const char *len = NULL;
-	/* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
-	const char *message = "{\"Tomada1\" : \"30Amperes\"}";
-	int length = 60;
+    REST.get_query_variable(request, "t", &target);
+    len_value = REST.get_query_variable(request, "a", &action);
 
-	REST.set_response_payload(response, message, length);
-	REST.set_header_content_type(response, REST.type.APPLICATION_JSON); /* text/plain is the default, hence this option could be omitted. */
+    PRINTF("t = %s | a = %s\n", target, action);
+
+    int hash_val = atoi(target);
+    int i;
+
+    char* ip_addr = NULL;
+    for(i = 0; i < 50; i++){
+        if(addr_table[i].hash == hash_val){
+            ip_addr = addr_table[i].ip;
+        }
+    }
+
+    if(ip_addr == NULL)
+        return; // TODO: return 404!
+    ((httpd_state *)request)->action = (char*)action;
+    ((httpd_state *)request)->action_len = len_value;
+    ((httpd_state *)request)->dst_ipaddr = ip_addr;
+
+    /* */
+    process_post_synch(&coap_client_process,
+                       15, (process_data_t)request);
+
 }
 
 static void
 res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-	http_packet_t *packet = (http_packet_t *)request;
-	PRINTF("POST PAYLOAD: %s\n", packet->buffer);
-	parse_pair_t key_pair[2];
-	//char key[2][200];
-	//char value[2][200];
 
-	parse_post_param(packet, key_pair, 2);
-
-	//PRINTF("PARAM2 = %s - VAL = %s\n", key[0], value[0]);
 }
-
-
-

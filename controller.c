@@ -12,6 +12,7 @@
 #include "controller.h"
 #include "rest-engine.h"
 #include "er-http.h"
+#include "coap_client.h"
 
 #define DEBUG 1
 #ifdef DEBUG
@@ -32,14 +33,14 @@ AUTOSTART_PROCESSES(&controller_process);
  */
 extern resource_t
   res_hello,
-  res_mirror,
-  res_chunks,
-  res_separate,
   res_push,
-  res_event,
-  res_sub,
-  res_b1_sep_b2,
-  res_http_index;
+  res_http_index,
+  res_api;
+
+extern uip_ipaddr_t default_neighbor_ip6_addr;
+extern uip_eth_addr ethernet_if_addr;
+
+address_table_t addr_table[50];
 
 static void
 print_local_addresses(void)
@@ -58,28 +59,28 @@ print_local_addresses(void)
     }
   }
 }
-
-/* Begin Post Handlers */
-static int
-defaults_post_handler(char *key, int key_len, char *val, int val_len)
-{
-	PRINTF("key = %s | val = %s\n", key, val);
-	return 1;
-}
-
-HTTPD_SIMPLE_POST_HANDLER(defaults, defaults_post_handler);
-/* End Post Handlers */
-
-
-
+//2001:db8:ac10:fe01:0:0:0:1
+uip_ipaddr_t coap_server = {
+        .u16[0] = 0xc0fe,
+        .u16[1] = 0x0,
+        .u16[2] = 0x0,
+        .u16[3] = 0x0,
+        .u16[4] = 0x0,
+        .u16[5] = 0x0,
+        .u16[6] = 0x0,
+        .u16[7] = 0xb00};
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(controller_process, ev, data)
 {
 	PROCESS_BEGIN();
 	PROCESS_PAUSE();
-	httpd_simple_register_post_handler(&defaults_handler);
 
 	static struct etimer et;
+
+	addr_table[0].hash = 1234567890;
+	memcpy(&addr_table[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
+	memcpy(&addr_table[0].ip, &coap_server, sizeof(coap_server));
+
 
 	uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
 
@@ -87,6 +88,9 @@ PROCESS_THREAD(controller_process, ev, data)
 
 	/* Initialize the REST engine. */
 	rest_init_engine();
+
+	/* Start Clients */
+	process_start(&coap_client_process, (void *)0);
 
 	/*
 	* Bind the resources to their Uri-Path.
@@ -97,12 +101,13 @@ PROCESS_THREAD(controller_process, ev, data)
 	/*  rest_activate_resource(&res_mirror, "debug/mirror"); */
 	/*  rest_activate_resource(&res_chunks, "test/chunks"); */
 	/*  rest_activate_resource(&res_separate, "test/separate"); */
-	rest_activate_resource(&res_push, "test/push");
+	//rest_activate_resource(&res_push, "test/push");
 	/*  rest_activate_resource(&res_event, "sensors/button"); */
 	/*  rest_activate_resource(&res_sub, "test/sub"); */
 	/*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
 
 	rest_activate_resource(&res_http_index, "/index");
+	rest_activate_resource(&res_api, "/api");
 
 
 
@@ -110,7 +115,7 @@ PROCESS_THREAD(controller_process, ev, data)
 		etimer_set(&et, 3*CLOCK_SECOND);
 		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-		PRINTF("\nBump!\n");
+		//PRINTF("\nBump!\n");
 		leds_toggle(LEDS_RED);
 	}
 
