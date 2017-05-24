@@ -10,15 +10,13 @@
 
 PROCESS(coap_client_process, "CoAP Client");
 
-#define PROCESS_EVENT_CUSTOM             15
-
 static coap_client_request_t request_list[MAX_REQUEST_COAP_CLIENT];
-static int request_list_counter;
+int coap_client_current_req_number;
 
 
 static void enqueue_request(httpd_state *data) {
-    coap_client_request_t *p = &request_list[request_list_counter];
-
+    coap_client_request_t *p = &request_list[coap_client_current_req_number];
+    p->connection = data->currentConnection;
     // URI
     p->method = data->request_type;
     // URI
@@ -32,49 +30,70 @@ static void enqueue_request(httpd_state *data) {
         p->blen = data->content_length;
     }
 
-    request_list_counter++;
+    coap_client_current_req_number++;
 }
 
 void
 client_chunk_handler(void *response)
 {
-  const uint8_t *chunk;
+    coap_packet_t * res = (coap_packet_t *)response;
+    const uint8_t *chunk;
 
-  int len = coap_get_payload(response, &chunk);
+    //TODO: mapping
+    request_list[0].status_code = res->code;
 
-  printf("|%.*s", len, (char *)chunk);
+    if(coap_get_rest_method(res) == COAP_GET){
+
+        int len = coap_get_payload(response, &chunk);
+        memcpy(&request_list[0].buffer, res->payload, res->payload_len);
+        //res->user_data->blen = len;
+        request_list[0].blen = len;
+    }
+
+    //printf("|%.*s", res->user_data->blen, (char *)chunk);
+
+    process_post_synch(&httpd_process, PROCESS_EVENT_CUSTOM, &request_list[0]);
+
+    // TODO
+    coap_client_current_req_number--;
 }
 
 PROCESS_THREAD(coap_client_process, ev, data)
 {
     PROCESS_BEGIN();
-    request_list_counter = 0;
+    coap_client_current_req_number = 0;
     static coap_packet_t request[1];      /* This way the packet can be treated as pointer as usual. */
 
     PROCESS_PAUSE();
 
     while(1) {
-        PROCESS_WAIT_UNTIL((ev == PROCESS_EVENT_CUSTOM || request_list_counter > 0));
+        PROCESS_WAIT_UNTIL((ev == PROCESS_EVENT_CUSTOM || coap_client_current_req_number > 0));
         if(ev == PROCESS_EVENT_CUSTOM) {
-            enqueue_request((httpd_state *)data);
-            PROCESS_YIELD();
+            if(coap_client_current_req_number < MAX_REQUEST_COAP_CLIENT) {
+                enqueue_request((httpd_state *)data);
+            }
+            //PROCESS_YIELD();
+        } else if(coap_client_current_req_number > 0){
+
+            /* prepare request, TID is set by COAP_BLOCKING_REQUEST() */
+            coap_client_request_t *p = &request_list[coap_client_current_req_number - 1];
+            coap_init_message(request, COAP_TYPE_CON, p->method, 0);
+
+            coap_set_header_uri_path(request, p->uri);
+
+            if(p->method == COAP_POST) {
+                coap_set_payload(request, (uint8_t *)p->buffer, p->blen);
+            }
+
+            request->user_data = &request_list[coap_client_current_req_number - 1];
+            //coap_client_current_req_number--;
+
+            COAP_BLOCKING_REQUEST((uip_ip6addr_t *)p->ip, UIP_HTONS(COAP_DEFAULT_PORT), request,
+                            client_chunk_handler);
         }
 
-        /* prepare request, TID is set by COAP_BLOCKING_REQUEST() */
-        coap_client_request_t *p = &request_list[request_list_counter - 1];
-        coap_init_message(request, COAP_TYPE_CON, p->method, 0);
-
-        coap_set_header_uri_path(request, p->uri);
-
-        if(p->method == COAP_POST) {
-            coap_set_payload(request, (uint8_t *)p->buffer, p->blen);
-        }
-
-        request_list_counter--;
-
-        COAP_BLOCKING_REQUEST((uip_ip6addr_t *)p->ip, UIP_HTONS(COAP_DEFAULT_PORT), request,
-                        client_chunk_handler);
-
+        //PROCESS_YIELD();
+        ev = 0;
     }
 
     PROCESS_END();

@@ -31,14 +31,18 @@ RESOURCE_HTTP(res_api,
 
 
 extern address_table_t addr_table[50];
+extern int coap_client_current_req_number;
 
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
+    rest_select_if(HTTP_IF);
+
     size_t len_value = 0;
     const char *target = NULL;
     const char *action = NULL;
 
+    ((http_response *)response)->imediate_response = 0;
     REST.get_query_variable(request, "t", &target);
     len_value = REST.get_query_variable(request, "a", &action);
 
@@ -61,9 +65,14 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     ((httpd_state *)request)->dst_ipaddr = ip_addr;
 
     /* */
-    process_post_synch(&coap_client_process,
-                       15, (process_data_t)request);
-
+    if(coap_client_current_req_number < MAX_REQUEST_COAP_CLIENT) {
+        process_post_synch(&coap_client_process,
+                           15, (process_data_t)request);
+    } else {
+        REST.set_response_status(response, 400);
+        ((http_response *)response)->imediate_response = 1;
+        ((http_response *)response)->status_str = http_header_404;
+    }
 }
 
 static void
