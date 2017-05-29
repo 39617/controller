@@ -12,6 +12,7 @@
 #include "controller.h"
 #include "rest-engine.h"
 #include "er-http.h"
+#include "coap_node.h"
 #include "coap_client.h"
 
 #define DEBUG 1
@@ -27,6 +28,10 @@ static uip_ipaddr_t prefix;	// COOJA Only
 PROCESS(controller_process, "Controller process");
 AUTOSTART_PROCESSES(&controller_process);
 
+
+/* Total number of online nodes */
+uint16_t online_nodes_counter = 0;
+
 /*
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
@@ -34,12 +39,11 @@ AUTOSTART_PROCESSES(&controller_process);
 extern resource_t
   res_hello,
   res_http_index,
-  res_api;
+  res_api,
+  res_coapnodes;
 
 extern uip_ipaddr_t default_neighbor_ip6_addr;
 extern uip_eth_addr ethernet_if_addr;
-
-address_table_t addr_table[50];
 
 static void
 print_local_addresses(void)
@@ -76,9 +80,10 @@ PROCESS_THREAD(controller_process, ev, data)
 
 	static struct etimer et;
 
-	addr_table[0].hash = 1234567890;
-	memcpy(&addr_table[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
-	memcpy(&addr_table[0].ip, &coap_server, sizeof(coap_server));
+	// TODO: just to test - remove
+	online_coap_nodes_list[0].hash = 1234567890;
+	//memcpy(&online_coap_nodes_list[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
+	memcpy(&online_coap_nodes_list[0].ip, &coap_server, sizeof(coap_server));
 
 
 	uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
@@ -97,16 +102,10 @@ PROCESS_THREAD(controller_process, ev, data)
 	* All static variables are the same for each URI path.
 	*/
 	rest_activate_resource(&res_hello, "test/hello");
-	/*  rest_activate_resource(&res_mirror, "debug/mirror"); */
-	/*  rest_activate_resource(&res_chunks, "test/chunks"); */
-	/*  rest_activate_resource(&res_separate, "test/separate"); */
-	//rest_activate_resource(&res_push, "test/push");
-	/*  rest_activate_resource(&res_event, "sensors/button"); */
-	/*  rest_activate_resource(&res_sub, "test/sub"); */
-	/*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
-
 	rest_activate_resource(&res_http_index, "/index");
 	rest_activate_resource(&res_api, "/api");
+	// CoAP nodes
+	rest_activate_resource(&res_coapnodes, "/coapnode");
 
 
 
@@ -114,7 +113,6 @@ PROCESS_THREAD(controller_process, ev, data)
 		etimer_set(&et, 3*CLOCK_SECOND);
 		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-		//PRINTF("\nBump!\n");
 		leds_toggle(LEDS_RED);
 	}
 

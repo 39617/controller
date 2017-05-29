@@ -1,25 +1,5 @@
 
-#include <stdlib.h>
-#include <string.h>
-#include "rest-engine.h"
-#include "er-http.h"
-#include "parser.h"
-
-#define DEBUG 1
-#if DEBUG
-#define PRINTF(...) printf(__VA_ARGS__)
-#define PRINT_ARRAY(str, len) \
-	do { \
-		for(i = 0; i < len; i++) { \
-			PRINTF("%c", *(str)); \
-			(str) = ((str) + 1); \
-		} \
-	} \
-	while(0)
-#else
-#define PRINTF(...)
-#define PRINT_ARRAY(...)
-#endif
+#include "res-common.h"
 
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);

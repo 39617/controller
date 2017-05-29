@@ -3,11 +3,9 @@
 
 #include "contiki.h"
 
-typedef struct _address_table{
-    int hash;
-    char mac[8];
-    char ip[16];
-} address_table_t, p_address_table_t;
+
+/* Total number of online nodes */
+extern uint16_t online_nodes_counter;
 
 PROCESS_NAME(controller_process);
 

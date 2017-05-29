@@ -26,7 +26,12 @@
 #define COAP_PROXY_OPTION_PROCESSING   0
 
 /* Enable client-side support for COAP observe */
+// TODO: retirar se não utilizarmos Observe resources
 #define COAP_OBSERVE_CLIENT 						1
+
+/* Maximum number of online nodes */
+#define CONTROLLER_CONF_MAX_ONLINE_COAP_NODES       5
+
 
 #undef UIP_CONF_TCP
 #define UIP_CONF_TCP                   				1

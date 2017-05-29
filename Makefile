@@ -31,6 +31,14 @@ MODULES += dev/enc28j60_revb
 
 # parser
 PARSERS_DIR = ./parsers
+PARSERS_FILES = $(notdir $(shell find $(PARSERS_DIR) -name '*.c'))
+
+# CoAP Node
+PROJECTDIRS += ./coap_node
+PROJECT_SOURCEFILES += coap_node.c
+
+# Erro codes
+PROJECT_SOURCEFILES += error_codes.c
 
 # RESTful resources
 REST_RESOURCES_DIR = ./resources
@@ -45,7 +53,7 @@ REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c' !
 endif
 endif
 PROJECT_SOURCEFILES += $(REST_RESOURCES_FILES)
-PARSERS_FILES = $(notdir $(shell find $(PARSERS_DIR) -name '*.c'))
+
 
 PROJECTDIRS += $(PARSERS_DIR)
 PROJECT_SOURCEFILES += $(PARSERS_FILES)
