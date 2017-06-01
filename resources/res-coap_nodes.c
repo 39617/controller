@@ -99,26 +99,27 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 	// associate the base request
 	node->node_data = (void *)request;
 
+	/* CoAP client only process one request at a time, so we need to check if is free. */
+	// TODO: implement a queue to dispatch requests to CoAP client
+	if(COAP_CLIENT_STATE == COAP_CLIENT_FREE) {
+		// httpd will not respond when return
+		// NOTE: Need to be here before 'process_post_synch' because
+		//       CoAP client can change it.
+		//       Ex.: when it can't accept more requests. In case, the
+		//       response will be immediate.
+		rsp->immediate_response = 0;
+		//
+		process_post_synch(&coap_client_process,
+				coap_client_event_new_request, (process_data_t)node);
 
-	// httpd will not respond when return
-	// NOTE: Need to be here before 'process_post_synch' because
-	//       CoAP client can change it.
-	//       Ex.: when it can't accept more requests. In case, the
-	//       response will be immediate.
-	rsp->immediate_response = 0;
-	//
-	process_post_synch(&coap_client_process,
-			coap_client_event_new_request, (process_data_t)node);
-
-	/* ----------------------------------------------------- */
-
-
-//	rsp->imediate_response = 1;
-//
-//	const char *message = "OLA";
-//	REST.set_response_payload(request, message, strlen(message) + 1);
-//	REST.set_header_content_type(request, REST.type.TEXT_PLAIN);
-//	REST.set_response_status(request, REST.status.OK);
+		// make httpd ignore periodic/retry events for this connection
+		req->state = STATE_IGNORE;
+	}
+	else {
+		rsp->immediate_response = 1;
+		PRINTF("\n** CoAP Cli. Too many req!");
+		set_http_error(request, error_too_many_requests, REST.status.SERVICE_UNAVAILABLE);
+	}
 }
 /*---------------------------------------------------------------------------*/
 static void

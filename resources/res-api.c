@@ -33,7 +33,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     int i;
 
     uint8_t* ip_addr = NULL;
-    for(i = 0; i < 50; i++){
+    for(i = 0; i < 5; i++){
         if(online_coap_nodes_list[i].hash == hash_val){
             ip_addr = online_coap_nodes_list[i].ip;
         }

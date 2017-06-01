@@ -11,19 +11,20 @@
 #include "er-http.h"
 
 /* Number of max requests processing at same time by CoAP client */
-#define COAP_CLIENT_MAX_REQUESTS                         5
-#define FREE                                             0x00
-#define USED                                             0xFF
+#define COAP_CLIENT_MAX_REQUESTS                  1
+#define COAP_CLIENT_FREE                          1
+#define COAP_CLIENT_BUSY                          0
+#define FREE                                      0x00
+#define USED                                      0xFF
 
 // CoAP client event
 extern process_event_t coap_client_event_new_request;
+//
+extern int coap_client_current_req_number;
+#define COAP_CLIENT_STATE                         (coap_client_current_req_number < COAP_CLIENT_MAX_REQUESTS)
 
 
 typedef struct _coap_client_request {
-	// used for internal control
-	uint8_t state;
-	// connect this object with the node's response
-	uint16_t mid;
     char uri[MAX_URI_LEN]; // TODO: acertar com o tamanho dos valores do POST, já que o que é passado para aqui é a action...
     uint8_t method;
     char buffer[MAX_PAYLOAD_SIZE];
