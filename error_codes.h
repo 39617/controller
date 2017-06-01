@@ -6,7 +6,7 @@
 #ifndef ERROR_CODES_H_
 #define ERROR_CODES_H_
 
-#define ERROR_BUFFER_SIZE                     16
+#define ERROR_BUFFER_SIZE                     18
 
 extern char error_buffer[ERROR_BUFFER_SIZE];
 extern char error_template[];

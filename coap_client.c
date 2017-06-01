@@ -34,7 +34,23 @@ process_event_t coap_client_event_new_request;
 static coap_packet_t request_packet[1];
 
 
-void parse_request(coap_node_entry_t *dst_node) {
+static void reset_origial_request(void) {
+	memset(original_request, 0x0, sizeof(coap_client_request_t));
+}
+
+/* Convert URI query 'p1=param1;p2=param2' to 'p1=param1&p2=param2' */
+static void parse_uri_query(char *query, int query_len) {
+	int i;
+	for(i = 0; i < query_len; i++) {
+		if(query[i] == ISO_semi_colon) {
+			*(&query[i]) = ISO_amp;
+		}
+	}
+}
+
+static void parse_request(coap_node_entry_t *dst_node) {
+	reset_origial_request();
+
 	httpd_state * http_state = (httpd_state *)dst_node->node_data;
 	// Set the corresponding Node object
 	original_request->owner = (void *)dst_node;
@@ -42,11 +58,24 @@ void parse_request(coap_node_entry_t *dst_node) {
 	original_request->http_conn = uip_conn;
 	// Request Method
 	original_request->method = http_state->request_type;
-	// URI
-	memcpy(original_request->uri, http_state->action, MIN(http_state->action_len, MAX_URI_LEN - 1));
-	// guarantee the null terminator
-	original_request->uri[MIN(http_state->action_len, MAX_URI_LEN)] = '\0';
 
+	// URI
+	memcpy(original_request->uri, http_state->coap_req.action,
+			MIN(http_state->coap_req.action_len, POST_PARAMS_VAL_MAX_LEN - 1));
+	// guarantee the null terminator
+	original_request->uri[MIN(http_state->coap_req.action_len, POST_PARAMS_VAL_MAX_LEN - 1)] = '\0';
+
+	// Parameters - are optional
+	if(http_state->coap_req.params_len > 0) {
+		memcpy(original_request->params, http_state->coap_req.params,
+				MIN(http_state->coap_req.params_len, POST_PARAMS_VAL_MAX_LEN - 1));
+		// guarantee the null terminator
+		original_request->params[MIN(http_state->coap_req.params_len, POST_PARAMS_VAL_MAX_LEN - 1)] = '\0';
+		parse_uri_query(original_request->params,
+				MIN(http_state->coap_req.params_len, POST_PARAMS_VAL_MAX_LEN - 1));
+	}
+
+	// Request Type
 	if(http_state->request_type == REQUEST_TYPE_POST) {
 		memcpy(original_request->buffer, http_state->buffer, http_state->content_length);
 		original_request->blen = http_state->content_length;
@@ -62,6 +91,8 @@ static void prepare_request(coap_node_entry_t *dst_node) {
 
 	coap_set_header_uri_path(request_packet, original_request->uri);
 
+	coap_set_header_uri_query(request_packet, original_request->params);
+
 	if(original_request->method & METHOD_POST) {
 		coap_set_payload(request_packet, (uint8_t *)original_request->buffer, original_request->blen);
 	}
@@ -76,8 +107,9 @@ client_chunk_handler(void *response)
     const uint8_t *chunk;
     // select CoAP rest
     rest_select_if(COAP_IF);
-    //
+    // Status code
     original_request->resp_status = res->code;
+    original_request->content_type = res->content_format;
 
 	int len = REST.get_request_payload(response, &chunk);
 	memcpy(original_request->buffer, chunk, len);
@@ -119,10 +151,6 @@ PROCESS_THREAD(coap_client_process, ev, data)
 
 	    // update the owner requests number
 	    owner->requests--;
-
-        //PROCESS_YIELD();
-		// TODO: tirar o martelo!
-        ev = 0;
     }
 
     PROCESS_END();

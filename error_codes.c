@@ -8,7 +8,7 @@
 
 
 char error_buffer[ERROR_BUFFER_SIZE];
-char error_template[] = "{\"error\":%s}";
+char error_template[] = "{\"error\":\"%s\"}";
 
 /* Invalid parameters */
 char error_invalid_params[] =           "0x1";

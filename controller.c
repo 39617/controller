@@ -37,9 +37,7 @@ uint16_t online_nodes_counter = 0;
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern resource_t
-  res_hello,
   res_http_index,
-  res_api,
   res_coapnodes;
 
 extern uip_ipaddr_t default_neighbor_ip6_addr;
@@ -101,9 +99,8 @@ PROCESS_THREAD(controller_process, ev, data)
 	* WARNING: Activating twice only means alternate path, not two instances!
 	* All static variables are the same for each URI path.
 	*/
-	rest_activate_resource(&res_hello, "test/hello");
+	// TODO: apagar
 	rest_activate_resource(&res_http_index, "/index");
-	rest_activate_resource(&res_api, "/api");
 	// CoAP nodes
 	rest_activate_resource(&res_coapnodes, "/coapnode");
 

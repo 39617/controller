@@ -17,22 +17,26 @@
 //
 #define TARGET_PARAM                             "t"
 #define ACTION_PARAM                             "a"
+#define PARAMS_PARAM                             "p"
 /*---------------------------------------------------------------------------*/
 static void
-res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-static void
-res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+res_common_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 /*---------------------------------------------------------------------------*/
 RESOURCE_HTTP(res_coapnodes,
           "CoAP Node",
-          res_get_handler,
-          res_post_handler,
-          NULL,
+		  res_common_handler,
+		  res_common_handler,
+		  res_common_handler,
           NULL);
 /*---------------------------------------------------------------------------*/
 static const char *target_str;
 static uint32_t target_hash;
 static const char *action;
+static const char *params;
+// lengths
+int target_len;
+int action_len;
+int params_len;
 /*---------------------------------------------------------------------------*/
 
 static size_t parse_target_str() {
@@ -46,12 +50,10 @@ static size_t parse_target_str() {
 
 
 static void
-res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+res_common_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
 	http_response * rsp = (http_response *)response;
 	httpd_state * req = (httpd_state *)request;
-	int target_len;
-	int action_len;
 
 	/* -----------------  parse query parameters  ----------------- */
 	target_len = REST.get_query_variable(request, TARGET_PARAM, &target_str);
@@ -73,6 +75,16 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 		return;
 	}
 
+	/* Parameters are optional but need to be valid if present! */
+	params_len = REST.get_query_variable(request, PARAMS_PARAM, &params);
+	PRINTF("\n** Params with len %d: ", params_len);
+	ptr = params;
+	PRINT_ARRAY(ptr, params_len);
+	if(params_len >= POST_PARAMS_VAL_MAX_LEN) {
+		set_http_error(request, error_invalid_params, REST.status.BAD_REQUEST);
+		return;
+	}
+
 	/* -----------------  get node status  ----------------- */
 	coap_node_entry_t * node;
 	if(!get_coap_node(target_hash, &node)) {
@@ -90,12 +102,17 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 	}
 	/* ----------------------------------------------------- */
 
-	/* -----------------  begin request processing  ----------------- */
+	/* -----------------  begin request build  ----------------- */
 	// update node requests
 	node->requests += 1;
 	// fill the request
-	req->action = (char*)action;
-	req->action_len = action_len;
+	req->coap_req.action = (char*)action;
+	req->coap_req.action_len = action_len;
+	// parameters are optional
+	if(params_len > 0) {
+		req->coap_req.params = (char*)params;
+		req->coap_req.params_len = params_len;
+	}
 	// associate the base request
 	node->node_data = (void *)request;
 
@@ -122,8 +139,4 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 	}
 }
 /*---------------------------------------------------------------------------*/
-static void
-res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
-{
 
-}

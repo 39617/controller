@@ -8,6 +8,7 @@
 #ifndef COAP_CLIENT_H_
 #define COAP_CLIENT_H_
 
+#include "httpd.h"
 #include "er-http.h"
 
 /* Number of max requests processing at same time by CoAP client */
@@ -25,12 +26,14 @@ extern int coap_client_current_req_number;
 
 
 typedef struct _coap_client_request {
-    char uri[MAX_URI_LEN]; // TODO: acertar com o tamanho dos valores do POST, já que o que é passado para aqui é a action...
+    char uri[POST_PARAMS_VAL_MAX_LEN];
+    char params[POST_PARAMS_VAL_MAX_LEN];
     uint8_t method;
     char buffer[MAX_PAYLOAD_SIZE];
     uint16_t blen;
     void * http_conn;
     unsigned int resp_status;
+    unsigned int content_type;
     // usually point to a coap_node_entry_t
     void * owner;
 } coap_client_request_t, *p_coap_client_request_t;
