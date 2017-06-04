@@ -6,6 +6,7 @@
 #define UIP_CONF_RECEIVE_WINDOW  60
 #endif
 
+// TODO: apagar?
 #ifndef WEBSERVER_CONF_CFS_CONNS
 #define WEBSERVER_CONF_CFS_CONNS 2
 #endif
@@ -44,10 +45,14 @@
 // Multi Interfaces
 #define UIP_CONF_DS6_INTERFACES_NUMBER				2
 #define UIP_CONF_DS6_DEFAULT_PREFIX					0xFEC0
+// Utilizado para construir o endereço Site-Local do nó
+#define IPV6_CONF_ADDR_8			                0xA
+// Used to make eth ll address different from radio interface
+#define IP_LINK_LOCAL_PREFIX_BYTE	                (0x21)
+// Link Layer header size - Ethernet - 14
+#define UIP_CONF_LLH_LEN							14
 
 // TODO: clean!
-// Link Layer header size - Ethernet - 14
-//#define UIP_CONF_LLH_LEN							14  // defenida no contiki-conf.h da plataforma
 // Used to have an user handler for ICMP packets - core/net/tcpip.c icmp6_new()
 // 	- Associates the process
 // /core/net/ipv6/uip6.c - uip_process()

@@ -96,8 +96,6 @@ static void prepare_request(coap_node_entry_t *dst_node) {
 	if(original_request->method & METHOD_POST) {
 		coap_set_payload(request_packet, (uint8_t *)original_request->buffer, original_request->blen);
 	}
-
-	request_packet->user_data = original_request;
 }
 
 void
