@@ -135,4 +135,6 @@ LOG_OPENOCD
 .project
 .settings/
 
+# doxygen
+doc/
 
