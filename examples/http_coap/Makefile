@@ -4,6 +4,7 @@ all: er-example-server
 CONTIKI=../..
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 PROJECT_SOURCEFILES += slip-bridge.c
+PROJECT_SOURCEFILES += jsonutils.c
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources
 ifndef TARGET
@@ -25,6 +26,7 @@ SMALL=1
 # REST Engine shall use Erbium CoAP implementation
 APPS += er-coap er-http
 APPS += rest-engine
+APPS += json
 
 # optional rules to get assembly
 #CUSTOM_RULE_C_TO_OBJECTDIR_O = 1

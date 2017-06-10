@@ -553,7 +553,6 @@ PT_THREAD(handle_input(struct httpd_state *s))
 
     if(s->return_code == RETURN_CODE_OK) {
       /* Acceptable Content Length. Try to obtain a lock */
-    	//TODO boa pergunta para o mestre claudio
       lock_obtain(s);
 
       if(lock == s) {

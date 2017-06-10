@@ -68,6 +68,8 @@ pop(struct jsonparse_state *state)
 static char
 atomic(struct jsonparse_state *state, char type)
 {
+	printf("type %c \n", type);
+	//return atomic(state, c = (s == '{' ? JSON_TYPE_PAIR_NAME : c));
   char c;
   const char *str;
   int len;
@@ -138,6 +140,7 @@ static int
 is_atomic(struct jsonparse_state *state)
 {
   char v = state->vtype;
+  printf("atomic state is %c \n", v);
   if(v == 'N' || v == '"' || v == '0' || v == 'n' || v == 't' || v == 'f') {
     return 1;
   } else {
@@ -170,6 +173,8 @@ jsonparse_next(struct jsonparse_state *state)
   v = state->vtype;
   state->pos++;
 
+ // printf(" valor do c e %c \n", c);
+
   switch(c) {
   case '{':
     if((s == 0 && v == 0) || s == '[' || s == ':') {
@@ -180,6 +185,7 @@ jsonparse_next(struct jsonparse_state *state)
     }
     return c;
   case '}':
+	  printf("case } \n");
     if((s == ':' && v != ',' && v != 0 ) || (s == '{' && v == 0)) {
       pop(state);
     } else {
@@ -196,6 +202,7 @@ jsonparse_next(struct jsonparse_state *state)
     }
     return c;
   case ':':
+	  printf("case : \n");
     if(s == '{' && v == 'N') {
       modify(state, ':');
       state->vtype = 0;
@@ -216,12 +223,16 @@ jsonparse_next(struct jsonparse_state *state)
     }
     return c;
   case '"':
+	  printf("case \" \n");
     if((s == 0 && v == 0) || s == '{' || s == '[' || s == ':') {
+    	printf("primeiro if\n");
       return atomic(state, c = (s == '{' ? JSON_TYPE_PAIR_NAME : c));
     } else {
-      state->error = JSON_ERROR_UNEXPECTED_STRING;
+    	printf("segundo else\n");
+    state->error = JSON_ERROR_UNEXPECTED_STRING;
       return JSON_TYPE_ERROR;
     }
+    printf("nenhum dos 2 \n");
     return c;
   case '[':
     if((s == 0 && v == 0) || s == '[' || s == ':') {
@@ -237,6 +248,7 @@ jsonparse_next(struct jsonparse_state *state)
     }
     return JSON_TYPE_ERROR;
   default:
+	  printf("case default \n");
     if(s == 0 || s == ':' || s == '[') {
       if (v != 0 && v != ',') {
         state->error = JSON_ERROR_SYNTAX;
