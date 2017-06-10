@@ -1,3 +1,13 @@
+/**
+ * @file     controller.c
+ * @brief    Main Process, that start's some process,
+ * initializes some resources and keeps toggling a LED.
+ * @version  1.0
+ * @date     01 Jun. 2017
+ * @author   Tiago Costa & Ricardo Jesus & Claudio Prates
+ *
+ **/
+
 #include <string.h>
 #include <stdio.h>
 
@@ -15,6 +25,9 @@
 #include "coap_node.h"
 #include "coap_client.h"
 
+/** @addtogroup Debug Debug
+ * @{
+ */
 #define DEBUG 1
 #ifdef DEBUG
 #include "net/ip/uip-debug.h"
@@ -22,102 +35,135 @@
 
 #ifdef DEBUG_COOJA
 static uint8_t prefix_set;	// COOJA Only
-static uip_ipaddr_t prefix;	// COOJA Only
+static uip_ipaddr_t prefix;// COOJA Only
 #endif
+/**
+ * @}
+ */
 
-PROCESS(controller_process, "Controller process");
-AUTOSTART_PROCESSES(&controller_process);
+PROCESS(controller_process, "Controller process"); /*!< Creates the Process controller_process with name Controller process */
+AUTOSTART_PROCESSES(&controller_process); /*!< Auto Start the Process previoulsy created */
 
+uint16_t online_nodes_counter = 0; /*!< Total number of online nodes */
 
-/* Total number of online nodes */
-uint16_t online_nodes_counter = 0;
 
 /*
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
-extern resource_t
-  res_http_index,
-  res_coapnodes;
 
-extern uip_ipaddr_t default_neighbor_ip6_addr;
-extern uip_eth_addr ethernet_if_addr;
+/** @defgroup Global Variables
+ * @{
+ */
+extern resource_t res_coapnodes; /*!< Resources to be activated need to be imported through the extern keyword. */
 
-static void
-print_local_addresses(void)
+extern uip_ipaddr_t default_neighbor_ip6_addr; /*!< Unknow Requests goes to Default neightbor */
+extern uip_eth_addr ethernet_if_addr; /*!< MAC address */
+/**
+ * @}
+ */
+
+/** @defgroup Debug Debug
+ * @{
+ */
+
+/**
+ * @brief Prints the Local Address
+ *
+ * It will print all the IP's configured in uip_ds6_addr_t addr_list
+ *
+ * @return nothing
+ */
+static void print_local_addresses(void)
 {
-  int i;
-  uint8_t state;
+    int i;
+    uint8_t state;
 
-  PRINTA("Server IPv6 addresses:\n");
-  for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
-    state = uip_ds6_if.addr_list[i].state;
-    if(uip_ds6_if.addr_list[i].isused &&
-       (state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
-      PRINTA(" ");
-      uip_debug_ipaddr_print(&uip_ds6_if.addr_list[i].ipaddr);
-      PRINTA("\n");
+    PRINTA("Server IPv6 addresses:\n");
+    for (i = 0; i < UIP_DS6_ADDR_NB; i++)
+    {
+        state = uip_ds6_if.addr_list[i].state;
+        if (uip_ds6_if.addr_list[i].isused
+                && (state == ADDR_TENTATIVE || state == ADDR_PREFERRED))
+        {
+            PRINTA(" ");
+            uip_debug_ipaddr_print(&uip_ds6_if.addr_list[i].ipaddr);
+            PRINTA("\n");
+        }
     }
-  }
 }
-//2001:db8:ac10:fe01:0:0:0:1
-uip_ipaddr_t coap_server = {
-        .u16[0] = 0xc0fe,
-        .u16[1] = 0x0,
-        .u16[2] = 0x0,
-        .u16[3] = 0x0,
-        .u16[4] = 0x0,
-        .u16[5] = 0x0,
-        .u16[6] = 0x0,
-        .u16[7] = 0xb00};
-/*---------------------------------------------------------------------------*/
+/**
+ * @}
+ */
+
+uip_ipaddr_t coap_server = { .u16[0] = 0xc0fe, .u16[1] = 0x0, .u16[2] = 0x0,
+                             .u16[3] = 0x0, .u16[4] = 0x0, .u16[5] = 0x0, .u16[6
+                                     ] = 0x0,
+                             .u16[7] = 0xb00 }; /*!< IPv6 of the CoAP server: 2001:db8:ac10:fe01:0:0:0:1 */
+
+/**
+ * @brief Main Thread of the Controller
+ *
+ * Responsible to initialize some resources
+ *
+ * Start some process's ex: coap_client_process
+ *
+ * Will receive event ev and the pointer to data regarding the event.
+ * We are using an timer to toggle a LED to keep tracking of the system
+ *
+ * @param controller_process : This process
+ * @param ev : The event passed to this process
+ * @param data : Data regarding to the event that fired
+ * @return nothing
+ */
 PROCESS_THREAD(controller_process, ev, data)
 {
-	PROCESS_BEGIN();
-	PROCESS_PAUSE();
+    PROCESS_BEGIN();
 
-	static struct etimer et;
+        PROCESS_PAUSE();
 
-	// TODO: just to test - remove
-	online_coap_nodes_list[0].hash = 1234567890;
-	//memcpy(&online_coap_nodes_list[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
-	memcpy(&online_coap_nodes_list[0].ip, &coap_server, sizeof(coap_server));
+        static struct etimer et;
 
+        // TODO: just to test - remove
+        online_coap_nodes_list[0].hash = 1234567890;
+        //memcpy(&online_coap_nodes_list[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
+        memcpy(&online_coap_nodes_list[0].ip, &coap_server,
+               sizeof(coap_server));
 
-	uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
+        uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
 
-	print_local_addresses();
+        print_local_addresses();
 
-	/* Initialize the REST engine. */
-	rest_init_engine();
+        /* Initialize the REST engine. */
+        rest_init_engine();
 
-	/* Start Clients */
-	process_start(&coap_client_process, (void *)0);
+        /* Start Clients */
+        process_start(&coap_client_process, (void *) 0);
 
-	/*
-	* Bind the resources to their Uri-Path.
-	* WARNING: Activating twice only means alternate path, not two instances!
-	* All static variables are the same for each URI path.
-	*/
-	// TODO: apagar
-	rest_activate_resource(&res_http_index, "/index");
-	// CoAP nodes
-	rest_activate_resource(&res_coapnodes, "/coapnode");
+        /*
+         * Bind the resources to their Uri-Path.
+         * WARNING: Activating twice only means alternate path, not two instances!
+         * All static variables are the same for each URI path.
+         */
+        // CoAP nodes
+        rest_activate_resource(&res_coapnodes, "/coapnode");
 
+        while (1)
+        {
+            etimer_set(&et, 3 * CLOCK_SECOND);
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
+            leds_toggle(LEDS_RED);
+        }
 
-	while(1) {
-		etimer_set(&et, 3*CLOCK_SECOND);
-		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+        PRINTF("END Controller\n");
 
-		leds_toggle(LEDS_RED);
-	}
-
-	PRINTF("END Controller\n");
-	PROCESS_END();
+    PROCESS_END();
 }
 
-
+/** @addtogroup Debug Debug
+ * @{
+ */
 #define VALUE_TO_STRING(x) #x
 #define VALUE(x) VALUE_TO_STRING(x)
 #define VAR_NAME_VALUE(var) #var "="  VALUE(var)
@@ -135,9 +181,6 @@ PROCESS_THREAD(controller_process, ev, data)
 #pragma message(VAR_NAME_VALUE(BOARD_IOID_CS))
 #pragma message(VAR_NAME_VALUE(BOARD_IOID_SPI_CLK_FLASH))
 #pragma message(VAR_NAME_VALUE(NBR_TABLE_CONF_MAX_NEIGHBORS))
-
-
-
-
-
-/*---------------------------------------------------------------------------*/
+/**
+ * @}
+ */

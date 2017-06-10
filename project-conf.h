@@ -1,7 +1,18 @@
+/**
+* @file     project-conf.h
+* @brief    Contains the configuration for project
+* @version  1.0
+* @date     20 May. 2017
+* @author   Tiago Costa & Ricardo Jesus & Claudio Prates
+*
+**/
+
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
 
-
+/** @addtogroup Configurations
+ * @{
+ */
 #ifndef UIP_CONF_RECEIVE_WINDOW
 #define UIP_CONF_RECEIVE_WINDOW  60
 #endif
@@ -72,5 +83,9 @@
  */
 #define uip_ipaddr_copy(dest, src) 		memcpy(dest, src, sizeof(uip_ip6addr_t));
 #define uip_ip6addr_copy(dest, src)		memcpy(dest, src, sizeof(uip_ip6addr_t));
+
+/**
+ * @}
+ */
 
 #endif

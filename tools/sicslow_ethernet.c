@@ -5,7 +5,7 @@
  * \author
  *         Colin O'Flynn <coflynn@newae.com>
  *
- * \addtogroup usbstick
+ * \addtogroup Ethernet
  */
 
 /* Copyright (c) 2008 by:
@@ -46,7 +46,7 @@
  */
 
 /**
-   \ingroup usbstick
+   \ingroup Ethernet
    \defgroup sicslowinterop 6LowPan Ethernet Interop
    @{
 */

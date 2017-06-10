@@ -1,6 +1,14 @@
-/*
- * res-coap_nodes.c
- *
+/**
+* @file     res-coap_nodes.c
+* @brief    Contains a Resource of a specific endpoint (Can be CoAP resource or HTTP resource)
+* @version  1.0
+* @date     01 Jun. 2017
+* @author   Tiago Costa & Ricardo Jesus & Claudio Prates
+*
+**/
+
+/** @defgroup Resource Resource
+ * @{
  */
 
 #include <stddef.h>
@@ -11,13 +19,12 @@
 #include "res-common.h"
 #include "coap_node.h"
 
-
 /* NOTE: Currently supports only *ONE* request per node. */
-#define MAX_REQUESTS_PER_NODE                    1
+#define MAX_REQUESTS_PER_NODE                    1  /*!< Max requests per node */
 //
-#define TARGET_PARAM                             "t"
-#define ACTION_PARAM                             "a"
-#define PARAMS_PARAM                             "p"
+#define TARGET_PARAM                             "t" /*!< Query Param for Target */
+#define ACTION_PARAM                             "a" /*!< Query Param for Action */
+#define PARAMS_PARAM                             "p" /*!< Query Param for Params */
 /*---------------------------------------------------------------------------*/
 static void
 res_common_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
@@ -27,18 +34,22 @@ RESOURCE_HTTP(res_coapnodes,
 		  res_common_handler,
 		  res_common_handler,
 		  res_common_handler,
-          NULL);
+          NULL); /*!< Creates a resource_t and marks it as HTTP */
 /*---------------------------------------------------------------------------*/
-static const char *target_str;
-static uint32_t target_hash;
-static const char *action;
-static const char *params;
+static const char *target_str; /*!< Its the t={x} in the Query | the target as string |  */
+static uint32_t target_hash; /*!< Target as Hash as uint32_t */
+static const char *action; /*!< Its the a={x} in the Query | the action as string |  */
+static const char *params; /*!< Its the p={x} in the Query | the params as string |  */
 // lengths
-int target_len;
-int action_len;
-int params_len;
+int target_len; /*!< Size of target */
+int action_len; /*!< Size of action */
+int params_len; /*!< Size of params */
 /*---------------------------------------------------------------------------*/
 
+/**
+ * @brief Parses the target query param
+ * @return size_t
+ */
 static size_t parse_target_str() {
 	// TODO: Melhorar este 'algoritmo'. Com esta função acontece existem falhas como:
 	// 1234A é um numero válido e a função vai retornar 1234.
@@ -48,7 +59,13 @@ static size_t parse_target_str() {
 	return (target_hash > 0)? 1 : 0;
 }
 
-
+/**
+ * @brief Common Handler on a HTTP request
+ *
+ * Takes a HTTP request and "files" a CoAP request
+ *
+ * @return nothing
+ */
 static void
 res_common_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
@@ -140,3 +157,10 @@ res_common_handler(void *request, void *response, uint8_t *buffer, uint16_t pref
 }
 /*---------------------------------------------------------------------------*/
 
+/**
+ * @}
+ */
+ 
+/**
+* @}
+*/

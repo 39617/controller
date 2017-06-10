@@ -5,7 +5,7 @@
  * \author
  *         Colin O'Flynn <coflynn@newae.com>
  *
- * \addtogroup usbstick
+ * \addtogroup Ethernet
  */
 
 /* Copyright (c) 2008 by:
@@ -55,8 +55,6 @@ typedef enum {
 
 
 #define UIP_ETHTYPE_802154 0x809A
-
-
 
 int8_t mac_translateIcmpLinkLayer(lltype_t target);
 int8_t mac_translateIPLinkLayer(lltype_t target);
