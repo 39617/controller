@@ -23,4 +23,3 @@ For debugging we need to enable the debug flags:
 In every page we want to debug
 <BR>
 <BR>
-*/

@@ -138,4 +138,5 @@ LOG_OPENOCD
 # doxygen
 docs/html/
 *.tmp
+*.rtf
 
