@@ -96,10 +96,25 @@ static void print_local_addresses(void)
  * @}
  */
 
-uip_ipaddr_t coap_server = { .u16[0] = 0xc0fe, .u16[1] = 0x0, .u16[2] = 0x0,
-                             .u16[3] = 0x0, .u16[4] = 0x0, .u16[5] = 0x0, .u16[6
-                                     ] = 0x0,
-                             .u16[7] = 0xb00 }; /*!< IPv6 of the CoAP server: 2001:db8:ac10:fe01:0:0:0:1 */
+//uip_ipaddr_t coap_server = {
+//		.u16[0] = 0xc0fe,
+//		.u16[1] = 0x0,
+//		.u16[2] = 0x0,
+//		.u16[3] = 0x0,
+//		.u16[4] = 0x0,
+//		.u16[5] = 0x0,
+//		.u16[6] = 0x0,
+//		.u16[7] = 0xb00 }; /*!< IPv6 of the CoAP server: 2001:db8:ac10:fe01:0:0:0:1 */
+
+uip_ipaddr_t coap_server = {
+		.u16[0] = 0x80fe,
+		.u16[1] = 0x0,
+		.u16[2] = 0x0,
+		.u16[3] = 0x0,
+		.u16[4] = 0x1200,
+		.u16[5] = 0xff4b,
+		.u16[6] = 0x09fe,
+		.u16[7] = 0x783b }; /*!< IPv6 of the CoAP server: fe80:0000:0000:0000:0012:4bff:fe09:3b78 */
 
 /**
  * @brief Main Thread of the Controller
@@ -181,6 +196,7 @@ PROCESS_THREAD(controller_process, ev, data)
 #pragma message(VAR_NAME_VALUE(BOARD_IOID_CS))
 #pragma message(VAR_NAME_VALUE(BOARD_IOID_SPI_CLK_FLASH))
 #pragma message(VAR_NAME_VALUE(NBR_TABLE_CONF_MAX_NEIGHBORS))
+#pragma message(VAR_NAME_VALUE(UIP_LLH_LEN))
 /**
  * @}
  */

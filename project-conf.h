@@ -13,6 +13,13 @@
 /** @addtogroup Configurations
  * @{
  */
+// Radio
+#define IEEE802154_CONF_PANID            0xABCD
+#define RF_CORE_CONF_CHANNEL                 25
+
+// TODO just to test
+#define NETSTACK_CONF_RDC           nullrdc_driver
+
 #ifndef UIP_CONF_RECEIVE_WINDOW
 #define UIP_CONF_RECEIVE_WINDOW  60
 #endif
@@ -51,7 +58,7 @@
 #define UIP_CONF_IPV6_RPL							0
 #define NETSTACK_CONF_WITH_IPV6						1
 #define UIP_CONF_ND6_SEND_NA						1
-#define UIP_CONF_ROUTER								0
+#define UIP_CONF_ROUTER								1 /* TODO: Verificar se dá para passar a zero */
 #define UIP_CONF_UDP								1
 // Multi Interfaces
 #define UIP_CONF_DS6_INTERFACES_NUMBER				2
