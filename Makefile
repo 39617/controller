@@ -7,6 +7,9 @@ PROJECT_DEVICE_DIR = ./dev
 APPS += er-coap er-http
 APPS += rest-engine
 
+# Http Request
+APPS += webbrowser
+
 # ----------------  Flags  ----------------
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 # Debug - TODO: retirar
@@ -43,6 +46,12 @@ PROJECT_SOURCEFILES += error_codes.c
 # RESTful resources
 REST_RESOURCES_DIR = ./resources
 PROJECTDIRS += $(REST_RESOURCES_DIR)
+
+# Http Request
+PROJECT_SOURCEFILES += http_request.c
+PROJECT_SOURCEFILES += http_request_test.c
+
+
 ifndef TARGET
 REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))
 else

@@ -25,6 +25,9 @@
 #include "coap_node.h"
 #include "coap_client.h"
 
+#include "http_request.h"
+#include "http_request_test.h"
+
 /** @addtogroup Debug Debug
  * @{
  */
@@ -43,6 +46,7 @@ static uip_ipaddr_t prefix;// COOJA Only
 
 PROCESS(controller_process, "Controller process"); /*!< Creates the Process controller_process with name Controller process */
 AUTOSTART_PROCESSES(&controller_process); /*!< Auto Start the Process previoulsy created */
+
 
 uint16_t online_nodes_counter = 0; /*!< Total number of online nodes */
 
@@ -162,6 +166,14 @@ PROCESS_THREAD(controller_process, ev, data)
          */
         // CoAP nodes
         rest_activate_resource(&res_coapnodes, "/coapnode");
+
+        /*etimer_set(&et, 20 * CLOCK_SECOND);
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));*/
+
+        process_start(&http_request_process, (void *) 0);
+
+
+        process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
 
         while (1)
         {
