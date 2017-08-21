@@ -30,23 +30,12 @@ extern process_event_t http_request_post_event;
 
 /// Struct used for webclient requests
 typedef struct _http_request {
-    //size_t action; //!< HTTP Action
-    //char host[32]; //!< Host of the server
-    //uint16_t port; //!< Server port
     char *path; //!< path for the resource
     char *data; //!< Pointer to data
-    //char path[PATH_MAX_SIZE]; //!< path for the resource
-    //char data[DATA_MAX_SIZE]; //!< Pointer to data
     void (*callback)(char *data, uint16_t len, int identifier, int state); //!< Called when response is received, state indicate success or error
     int identifier; //!< identifier of hardware that requested this request
 }http_request_t, *p_http_request_t;
 
-
-/// Struct used for the webclient requests list
-/*typedef struct _http_request_list {
-  struct *next; //!< Pointer to next member in the struct
-  http_request_t item; //!< http_request struct
-}http_request_list_t, *p_http_request_list_t;*/
 PROCESS_NAME(http_request_process);
 
 

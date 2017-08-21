@@ -60,6 +60,7 @@ uint16_t online_nodes_counter = 0; /*!< Total number of online nodes */
  * @{
  */
 extern resource_t res_coapnodes; /*!< Resources to be activated need to be imported through the extern keyword. */
+extern resource_t res_coaptohttp;
 
 extern uip_ipaddr_t default_neighbor_ip6_addr; /*!< Unknow Requests goes to Default neightbor */
 extern uip_eth_addr ethernet_if_addr; /*!< MAC address */
@@ -94,6 +95,18 @@ static void print_local_addresses(void)
             uip_debug_ipaddr_print(&uip_ds6_if.addr_list[i].ipaddr);
             PRINTA("\n");
         }
+    }
+
+    PRINTA("* Radio: Tentative link-local IPv6 address ");
+    {
+    uip_ds6_addr_t *lladdr;
+    int i;
+    lladdr = uip_ds6_get_link_local(-1);
+    for(i = 0; i < 7; ++i) {
+        PRINTA("%02x%02x:", lladdr->ipaddr.u8[i * 2],
+             lladdr->ipaddr.u8[i * 2 + 1]);
+    }
+    PRINTA("%02x%02x\n", lladdr->ipaddr.u8[14], lladdr->ipaddr.u8[15]);
     }
 }
 /**
@@ -166,6 +179,7 @@ PROCESS_THREAD(controller_process, ev, data)
          */
         // CoAP nodes
         rest_activate_resource(&res_coapnodes, "/coapnode");
+        rest_activate_resource(&res_coaptohttp, "/httpreq");
 
         /*etimer_set(&et, 20 * CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));*/
