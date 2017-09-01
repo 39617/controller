@@ -18,10 +18,10 @@
 #define RF_CORE_CONF_CHANNEL                 25
 
 // TODO just to test
-#define NETSTACK_CONF_RDC           nullrdc_driver
+#define NETSTACK_CONF_RDC                nullrdc_driver
 
 #ifndef UIP_CONF_RECEIVE_WINDOW
-#define UIP_CONF_RECEIVE_WINDOW  60
+#define UIP_CONF_RECEIVE_WINDOW          60
 #endif
 
 // TODO: apagar?
@@ -69,6 +69,9 @@
 #define IP_LINK_LOCAL_PREFIX_BYTE	                (0x21)
 // Link Layer header size - Ethernet - 14
 #define UIP_CONF_LLH_LEN							14
+
+// Disable link statistics to avoid nbr-table bug
+#define LINK_STATS_CONF_ENABLED                     0
 
 // TODO: clean!
 // Used to have an user handler for ICMP packets - core/net/tcpip.c icmp6_new()
