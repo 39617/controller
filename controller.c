@@ -120,6 +120,23 @@ uip_ipaddr_t coap_server = {
 		.u16[6] = 0x09fe,
 		.u16[7] = 0x783b }; /*!< IPv6 of the CoAP server: fe80:0000:0000:0000:0012:4bff:fe09:3b78 */
 
+
+#define LIGHT_ON_DURATION   0.05
+#define LIGHT_OFF_DURATION  5
+static clock_time_t update_light_signal() {
+  static uint8_t state;
+
+  if(state == 0) {
+    state = 1;
+    leds_on(LEDS_RED);
+    return LIGHT_ON_DURATION * CLOCK_SECOND;
+  }
+
+  state = 0;
+  leds_off(LEDS_RED);
+  return LIGHT_OFF_DURATION * CLOCK_SECOND;
+}
+
 /**
  * @brief Main Thread of the Controller
  *
@@ -141,7 +158,7 @@ PROCESS_THREAD(controller_process, ev, data)
 
         PROCESS_PAUSE();
 
-        static struct etimer et;
+        static struct etimer et_light_signal;
 
         // TODO: just to test - remove
         online_coap_nodes_list[0].hash = 1234567890;
@@ -150,7 +167,6 @@ PROCESS_THREAD(controller_process, ev, data)
                sizeof(coap_server));
 
         uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
-
         print_local_addresses();
 
         /* Initialize the REST engine. */
@@ -170,17 +186,15 @@ PROCESS_THREAD(controller_process, ev, data)
         /*etimer_set(&et, 20 * CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));*/
 
-        process_start(&http_request_process, (void *) 0);
+        //process_start(&http_request_process, (void *) 0);
 
 
-        process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
+        //process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
 
         while (1)
         {
-            etimer_set(&et, 3 * CLOCK_SECOND);
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-            leds_toggle(LEDS_RED);
+            etimer_set(&et_light_signal, update_light_signal());
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_light_signal));
         }
 
         PRINTF("END Controller\n");
