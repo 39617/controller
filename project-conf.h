@@ -62,6 +62,8 @@
 #define UIP_CONF_UDP								1
 // Multi Interfaces
 #define UIP_CONF_DS6_INTERFACES_NUMBER				2
+#define UIP_CONF_RADIO_INTERFACE_ID                 0 /* Radio interface's id */
+#define UIP_CONF_DEFAULT_INTERFACE_ID               1 /* Ethernet interface's id */
 #define UIP_CONF_DS6_DEFAULT_PREFIX					0xFEC0
 // Utilizado para construir o endereço Site-Local do nó
 #define IPV6_CONF_ADDR_8			                0xA
