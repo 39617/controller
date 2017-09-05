@@ -28,6 +28,8 @@
 #include "http_request.h"
 #include "http_request_test.h"
 
+#include "netctrl.h"
+
 /** @addtogroup Debug Debug
  * @{
  */
@@ -156,51 +158,68 @@ PROCESS_THREAD(controller_process, ev, data)
 {
     PROCESS_BEGIN();
 
-        PROCESS_PAUSE();
+	PROCESS_PAUSE();
 
-        static struct etimer et_light_signal;
+	static struct etimer et_light_signal;
 
-        // TODO: just to test - remove
-        online_coap_nodes_list[0].hash = 1234567890;
-        //memcpy(&online_coap_nodes_list[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
-        memcpy(&online_coap_nodes_list[0].ip, &coap_server,
-               sizeof(coap_server));
+	// TODO: just to test - remove
+	online_coap_nodes_list[0].hash = 1234567890;
+	//memcpy(&online_coap_nodes_list[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
+	memcpy(&online_coap_nodes_list[0].ip, &coap_server,
+		   sizeof(coap_server));
 
-        uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
-        print_local_addresses();
+	uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
+	print_local_addresses();
 
-        /* Initialize the REST engine. */
-        rest_init_engine();
+	/* Initialize the REST engine. */
+	rest_init_engine();
 
-        /* Start Clients */
-        process_start(&coap_client_process, (void *) 0);
+	/* Start Clients */
+	process_start(&coap_client_process, (void *) 0);
 
-        /*
-         * Bind the resources to their Uri-Path.
-         * WARNING: Activating twice only means alternate path, not two instances!
-         * All static variables are the same for each URI path.
-         */
-        // CoAP nodes
-        rest_activate_resource(&res_coapnodes, "/coapnode");
+	/*
+	 * Bind the resources to their Uri-Path.
+	 * WARNING: Activating twice only means alternate path, not two instances!
+	 * All static variables are the same for each URI path.
+	 */
+	// CoAP nodes
+	rest_activate_resource(&res_coapnodes, "/coapnode");
 
-        /*etimer_set(&et, 20 * CLOCK_SECOND);
-        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));*/
+	/*etimer_set(&et, 20 * CLOCK_SECOND);
+	PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));*/
 
-        //process_start(&http_request_process, (void *) 0);
+	//process_start(&http_request_process, (void *) 0);
 
 
-        //process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
+	//process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
 
-        while (1)
-        {
-            etimer_set(&et_light_signal, update_light_signal());
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_light_signal));
-        }
+	etimer_set(&et_light_signal, update_light_signal());
 
-        PRINTF("END Controller\n");
+	/* Initializes the Network Controll protocol */
+	netctrl_init();
+
+	while (1)
+	{
+		PROCESS_WAIT_EVENT();
+
+		if(ev == tcpip_event) {
+			if(uip_newdata()) {
+			    PRINTF("** Receiving UDP datagram from: ");
+			    PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
+			    PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
+			           uip_datalen());
+			    netctrl_server_handle_net_event();
+			}
+		} else if(ev == PROCESS_EVENT_TIMER && data == &et_light_signal) {
+			etimer_set(&et_light_signal, update_light_signal());
+		}
+	}
+
+	PRINTF("END Controller\n");
 
     PROCESS_END();
 }
+
 
 /** @addtogroup Debug Debug
  * @{

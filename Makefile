@@ -6,6 +6,7 @@ PROJECT_DEVICE_DIR = ./dev
 # REST Engine shall use Erbium CoAP implementation
 APPS += er-coap er-http
 APPS += rest-engine
+APPS += netctrl
 
 # Http Request
 APPS += webbrowser
