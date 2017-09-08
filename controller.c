@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include "contiki.h"
 #include "contiki-net.h"
@@ -29,6 +30,7 @@
 #include "http_request_test.h"
 
 #include "netctrl.h"
+#include "node-table.h"
 
 /** @addtogroup Debug Debug
  * @{
@@ -161,6 +163,7 @@ PROCESS_THREAD(controller_process, ev, data)
 	PROCESS_PAUSE();
 
 	static struct etimer et_light_signal;
+	static struct etimer et_node_table;
 
 	// TODO: just to test - remove
 	online_coap_nodes_list[0].hash = 1234567890;
@@ -193,7 +196,11 @@ PROCESS_THREAD(controller_process, ev, data)
 
 	//process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
 
+	/* set timers */
 	etimer_set(&et_light_signal, update_light_signal());
+	// When the table is empty, dont need to refresh it
+	// TODO Use other defenition then UINT_MAX to be more portable - try using -1 with cast to unsigned...
+	etimer_set(&et_node_table, UINT_MAX * CLOCK_SECOND);
 
 	/* Initializes the Network Controll protocol */
 	netctrl_init();
@@ -208,10 +215,17 @@ PROCESS_THREAD(controller_process, ev, data)
 			    PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
 			    PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
 			           uip_datalen());
-			    netctrl_server_handle_net_event();
+			    //
+			    int ret = netctrl_server_handle_net_event();
+			    if(ret == NETCTRL_RESPONSE_RESULT_REG_OK || ret == NETCTRL_RESPONSE_RESULT_RENEW_OK) {
+				    // Need to update the table and reset the timer
+				    etimer_set(&et_node_table, node_table_refresh() * CLOCK_SECOND);
+			    }
 			}
 		} else if(ev == PROCESS_EVENT_TIMER && data == &et_light_signal) {
 			etimer_set(&et_light_signal, update_light_signal());
+		} else if(ev == PROCESS_EVENT_TIMER && data == &et_node_table) {
+			etimer_set(&et_node_table, node_table_refresh() * CLOCK_SECOND);
 		}
 	}
 
