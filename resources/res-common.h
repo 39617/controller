@@ -12,7 +12,7 @@
 #include "rest-engine.h"
 #include "er-http.h"
 #include "parser.h"
-#include "coap_node.h"
+#include "node-table.h"
 #include "error_codes.h"
 #include "er-coap-engine.h"
 #include "coap_client.h"

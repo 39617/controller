@@ -8,7 +8,7 @@
  **/
 
 #include "coap_client.h"
-#include "coap_node.h"
+#include "node-table.h"
 #include "httpd.h"
 #include "er-http.h"
 #include "error_codes.h"
@@ -79,7 +79,7 @@ static void parse_uri_query(char *query, int query_len)
  * @param dst_node : Destination node of http packet
  * @return nothing
  */
-static void parse_request(coap_node_entry_t *dst_node)
+static void parse_request(node_table_entry_t *dst_node)
 {
     reset_original_request();
 
@@ -131,7 +131,7 @@ static void parse_request(coap_node_entry_t *dst_node)
  * @param dst_node : Pointer to the destination node
  * @return nothing
  */
-static void prepare_request(coap_node_entry_t *dst_node)
+static void prepare_request(node_table_entry_t *dst_node)
 {
 
     parse_request(dst_node);
@@ -192,7 +192,7 @@ PROCESS_THREAD(coap_client_process, ev, data)
     PROCESS_BEGIN();
         coap_client_current_req_number = 0;
         // owner of received requests
-        static coap_node_entry_t *owner;
+        static node_table_entry_t *owner;
         // Get an Event Id
         coap_client_event_new_request = process_alloc_event();
 
@@ -204,16 +204,16 @@ PROCESS_THREAD(coap_client_process, ev, data)
             PRINTF("\n**TODO COAP CLIENT!!!!!");
 
             //
-            owner = (coap_node_entry_t *) data;
+            owner = (node_table_entry_t *) data;
 
-            prepare_request((coap_node_entry_t *) data);
+            prepare_request((node_table_entry_t *) data);
             ((httpd_state *) owner->node_data)->response.immediate_response = 0;
             //
             coap_client_current_req_number++;
 
             // Make the CoAP request!
             COAP_BLOCKING_REQUEST(
-                    (uip_ip6addr_t * )((coap_node_entry_t * )data)->ip,
+                    (uip_ipaddr_t *)&((node_table_entry_t * )data)->ip_addr,
                     UIP_HTONS(COAP_DEFAULT_PORT), request_packet,
                     client_chunk_handler);
             // Send to httpd

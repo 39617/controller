@@ -14,10 +14,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include "controller.h"
 #include "res-common.h"
-#include "coap_node.h"
+#include "node-table.h"
 
 /* NOTE: Currently supports only *ONE* request per node. */
 #define MAX_REQUESTS_PER_NODE                    1  /*!< Max requests per node */
@@ -54,12 +55,8 @@ parse_pair_t post_key_pair[POST_PARAMS_N]; /*!< POST parameters are stored here 
  * @return size_t
  */
 static size_t parse_target_str() {
-	// TODO: Melhorar este 'algoritmo'. Com esta função acontece existem falhas como:
-	// 1234A é um numero válido e a função vai retornar 1234.
-	// Em todo o caso não é critico.
-	target_hash = atoi(target_str);
-
-	return (target_hash > 0)? 1 : 0;
+	target_hash = strtoul(target_str, NULL, 10);
+	return (target_hash > 0 || target_hash == ULONG_MAX)? 1 : 0;
 }
 
 /**
@@ -106,8 +103,8 @@ res_common_handler(void *request, void *response, uint8_t *buffer, uint16_t pref
 	}
 
 	/* -----------------  get node status  ----------------- */
-	coap_node_entry_t * node;
-	if(!get_coap_node(target_hash, &node)) {
+	node_table_entry_t * node = node_table_get_node_by_hash(target_hash);
+	if(node == NULL) {
 		PRINTF("\n** Target node Not Found!");
 		set_http_error(request, error_node_not_found, REST.status.NOT_FOUND);
 		return;

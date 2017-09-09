@@ -23,13 +23,12 @@
 #include "controller.h"
 #include "rest-engine.h"
 #include "er-http.h"
-#include "coap_node.h"
 #include "coap_client.h"
 
 #include "http_request.h"
 #include "http_request_test.h"
 
-#include "netctrl.h"
+#include "netctrl-server.h"
 #include "node-table.h"
 
 /** @addtogroup Debug Debug
@@ -165,12 +164,6 @@ PROCESS_THREAD(controller_process, ev, data)
 	static struct etimer et_light_signal;
 	static struct etimer et_node_table;
 
-	// TODO: just to test - remove
-	online_coap_nodes_list[0].hash = 1234567890;
-	//memcpy(&online_coap_nodes_list[0].mac, &ethernet_if_addr, sizeof(ethernet_if_addr));
-	memcpy(&online_coap_nodes_list[0].ip, &coap_server,
-		   sizeof(coap_server));
-
 	uip_ds6_select_netif(UIP_DEFAULT_INTERFACE_ID);
 	print_local_addresses();
 
@@ -203,7 +196,7 @@ PROCESS_THREAD(controller_process, ev, data)
 	etimer_set(&et_node_table, UINT_MAX * CLOCK_SECOND);
 
 	/* Initializes the Network Controll protocol */
-	netctrl_init();
+	netctrl_server_init();
 
 	while (1)
 	{

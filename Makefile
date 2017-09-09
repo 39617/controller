@@ -37,10 +37,6 @@ MODULES += dev/enc28j60_revb
 PARSERS_DIR = ./parsers
 PARSERS_FILES = $(notdir $(shell find $(PARSERS_DIR) -name '*.c'))
 
-# CoAP Node
-PROJECTDIRS += ./coap_node
-PROJECT_SOURCEFILES += coap_node.c
-
 # Erro codes
 PROJECT_SOURCEFILES += error_codes.c
 
