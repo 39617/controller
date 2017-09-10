@@ -63,6 +63,7 @@ uint16_t online_nodes_counter = 0; /*!< Total number of online nodes */
  * @{
  */
 extern resource_t res_coapnodes; /*!< Resources to be activated need to be imported through the extern keyword. */
+extern resource_t res_coaptohttp;
 
 extern uip_ipaddr_t default_neighbor_ip6_addr; /*!< Unknow Requests goes to Default neightbor */
 extern uip_eth_addr ethernet_if_addr; /*!< MAC address */
@@ -102,26 +103,6 @@ static void print_local_addresses(void)
 /**
  * @}
  */
-
-//uip_ipaddr_t coap_server = {
-//		.u16[0] = 0xc0fe,
-//		.u16[1] = 0x0,
-//		.u16[2] = 0x0,
-//		.u16[3] = 0x0,
-//		.u16[4] = 0x0,
-//		.u16[5] = 0x0,
-//		.u16[6] = 0x0,
-//		.u16[7] = 0xb00 }; /*!< IPv6 of the CoAP server: 2001:db8:ac10:fe01:0:0:0:1 */
-
-uip_ipaddr_t coap_server = {
-		.u16[0] = 0x80fe,
-		.u16[1] = 0x0,
-		.u16[2] = 0x0,
-		.u16[3] = 0x0,
-		.u16[4] = 0x1200,
-		.u16[5] = 0xff4b,
-		.u16[6] = 0x09fe,
-		.u16[7] = 0x783b }; /*!< IPv6 of the CoAP server: fe80:0000:0000:0000:0012:4bff:fe09:3b78 */
 
 
 #define LIGHT_ON_DURATION   0.05
@@ -180,19 +161,14 @@ PROCESS_THREAD(controller_process, ev, data)
 	 */
 	// CoAP nodes
 	rest_activate_resource(&res_coapnodes, "/coapnode");
+	// CoAP-HTTP
+	//rest_activate_resource(&res_coaptohttp, "coaptohttp");
 
-	/*etimer_set(&et, 20 * CLOCK_SECOND);
-	PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));*/
-
-	//process_start(&http_request_process, (void *) 0);
-
-
-	//process_start(&http_request_test_process, (void *) 0); // test process for testing http requests
+	process_start(&http_request_process, (void *) 0);
 
 	/* set timers */
 	etimer_set(&et_light_signal, update_light_signal());
 	// When the table is empty, dont need to refresh it
-	// TODO Use other defenition then UINT_MAX to be more portable - try using -1 with cast to unsigned...
 	etimer_set(&et_node_table, UINT_MAX * CLOCK_SECOND);
 
 	/* Initializes the Network Controll protocol */

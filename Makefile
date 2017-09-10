@@ -46,7 +46,6 @@ PROJECTDIRS += $(REST_RESOURCES_DIR)
 
 # Http Request
 PROJECT_SOURCEFILES += http_request.c
-PROJECT_SOURCEFILES += http_request_test.c
 
 
 ifndef TARGET

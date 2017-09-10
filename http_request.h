@@ -17,10 +17,10 @@ extern process_event_t http_request_get_event;
 extern process_event_t http_request_post_event;
 
 #define PATH_MAX_SIZE           10 //!< max size of the path on the server
-#define DATA_MAX_SIZE           512 //!< max size of data to send, webclient my accept different size!
+#define PAYLOAD_MAX_SIZE        512 //!< max size of data to send, webclient my accept different size!
 //#define LIST_SIZE               2 //!< size of the list with pending requests
 #define RUNNING                 0
-#define FREE                    1
+#define IDLE                    1
 
 #define GET                     0
 #define POST                    1
@@ -34,11 +34,13 @@ typedef struct _http_request {
     //char host[32]; //!< Host of the server
     //uint16_t port; //!< Server port
     char *path; //!< path for the resource
-    char *data; //!< Pointer to data
+    uint16_t path_len;
+    char *payload; //!< Pointer to payload
+    uint16_t payload_len;
     //char path[PATH_MAX_SIZE]; //!< path for the resource
-    //char data[DATA_MAX_SIZE]; //!< Pointer to data
+    //char data[PAYLOAD_MAX_SIZE]; //!< Pointer to data
     void (*callback)(char *data, uint16_t len, int identifier, int state); //!< Called when response is received, state indicate success or error
-    int identifier; //!< identifier of hardware that requested this request
+    uint32_t identifier; //!< identifier of hardware that requested this request
 }http_request_t, *p_http_request_t;
 
 

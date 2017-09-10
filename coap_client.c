@@ -201,7 +201,7 @@ PROCESS_THREAD(coap_client_process, ev, data)
         while (1)
         {
             PROCESS_WAIT_UNTIL((ev == coap_client_event_new_request));
-            PRINTF("\n**TODO COAP CLIENT!!!!!");
+            PRINTF("\n**TODO COAP CLIENT!!!!!\n\n");
 
             //
             owner = (node_table_entry_t *) data;
@@ -216,6 +216,7 @@ PROCESS_THREAD(coap_client_process, ev, data)
                     (uip_ipaddr_t *)&((node_table_entry_t * )data)->ip_addr,
                     UIP_HTONS(COAP_DEFAULT_PORT), request_packet,
                     client_chunk_handler);
+            PRINTF("********* DEPOIS do BLOCKING!\n\n");
             // Send to httpd
             process_post_synch(&httpd_process, coap_client_event_new_response,
                                original_request);
@@ -225,6 +226,9 @@ PROCESS_THREAD(coap_client_process, ev, data)
 
             // update the owner requests number
             owner->requests--;
+
+            // TODO: Não esquecer!
+            PROCESS_PAUSE();
         }
 
     PROCESS_END();
