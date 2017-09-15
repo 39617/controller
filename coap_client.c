@@ -18,7 +18,7 @@
 /** @addtogroup Debug Debug
  * @{
  */
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
@@ -201,11 +201,9 @@ PROCESS_THREAD(coap_client_process, ev, data)
         while (1)
         {
             PROCESS_WAIT_UNTIL((ev == coap_client_event_new_request));
-            PRINTF("\n**TODO COAP CLIENT!!!!!\n\n");
-
+            PRINTF("\n**COAP CLIENT!\n");
             //
             owner = (node_table_entry_t *) data;
-
             prepare_request((node_table_entry_t *) data);
             ((httpd_state *) owner->node_data)->response.immediate_response = 0;
             //
@@ -216,14 +214,12 @@ PROCESS_THREAD(coap_client_process, ev, data)
                     (uip_ipaddr_t *)&((node_table_entry_t * )data)->ip_addr,
                     UIP_HTONS(COAP_DEFAULT_PORT), request_packet,
                     client_chunk_handler);
-            PRINTF("********* DEPOIS do BLOCKING!\n\n");
             // Send to httpd
             process_post_synch(&httpd_process, coap_client_event_new_response,
                                original_request);
 
             // free CoAP client
             coap_client_current_req_number--;
-
             // update the owner requests number
             owner->requests--;
 

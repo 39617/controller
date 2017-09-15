@@ -162,7 +162,7 @@ PROCESS_THREAD(controller_process, ev, data)
 	// CoAP nodes
 	rest_activate_resource(&res_coapnodes, "/coapnode");
 	// CoAP-HTTP
-	//rest_activate_resource(&res_coaptohttp, "coaptohttp");
+	rest_activate_resource(&res_coaptohttp, "coaptohttp");
 
 	process_start(&http_request_process, (void *) 0);
 

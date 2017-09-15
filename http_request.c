@@ -9,7 +9,7 @@
 #include <string.h>
 
 
-#define DEBUG 1
+#define DEBUG 0
 #ifdef DEBUG
 #include "net/ip/uip-debug.h"
 #endif /* DEBUG */
@@ -23,7 +23,7 @@ process_event_t http_request_post_event;
 http_request_t *local_req;
 int action;
 
-char host[32] = "[fe80:2100::12:4bff:fe27:c50e]"; //!< Host of the server
+char host[] = "fe80:2100::12:4bff:fe27:c50e"; //!< Host of the server
 uint16_t port = 3000; //!< Server port
 int state;
 
@@ -205,7 +205,6 @@ webclient_closed(void)
 {
   state = IDLE;
   PRINTF("Connection closed.\n");
-  //app_quit();
 }
 /*-----------------------------------------------------------------------------------*/
 /* Callback function. Called from the webclient when the HTTP

@@ -17,7 +17,7 @@ extern process_event_t http_request_get_event;
 extern process_event_t http_request_post_event;
 
 #define PATH_MAX_SIZE           10 //!< max size of the path on the server
-#define PAYLOAD_MAX_SIZE        512 //!< max size of data to send, webclient my accept different size!
+#define PAYLOAD_MAX_SIZE        100 //!< max size of data to send, webclient my accept different size!
 //#define LIST_SIZE               2 //!< size of the list with pending requests
 #define RUNNING                 0
 #define IDLE                    1
@@ -30,25 +30,15 @@ extern process_event_t http_request_post_event;
 
 /// Struct used for webclient requests
 typedef struct _http_request {
-    //size_t action; //!< HTTP Action
-    //char host[32]; //!< Host of the server
-    //uint16_t port; //!< Server port
     char *path; //!< path for the resource
     uint16_t path_len;
     char *payload; //!< Pointer to payload
     uint16_t payload_len;
-    //char path[PATH_MAX_SIZE]; //!< path for the resource
-    //char data[PAYLOAD_MAX_SIZE]; //!< Pointer to data
     void (*callback)(char *data, uint16_t len, int identifier, int state); //!< Called when response is received, state indicate success or error
     uint32_t identifier; //!< identifier of hardware that requested this request
 }http_request_t, *p_http_request_t;
 
 
-/// Struct used for the webclient requests list
-/*typedef struct _http_request_list {
-  struct *next; //!< Pointer to next member in the struct
-  http_request_t item; //!< http_request struct
-}http_request_list_t, *p_http_request_list_t;*/
 PROCESS_NAME(http_request_process);
 
 
