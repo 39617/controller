@@ -26,7 +26,6 @@
 #include "coap_client.h"
 
 #include "http_request.h"
-#include "http_request_test.h"
 
 #include "netctrl-server.h"
 #include "node-table.h"
