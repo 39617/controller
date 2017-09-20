@@ -44,11 +44,11 @@
 #undef COAP_PROXY_OPTION_PROCESSING
 #define COAP_PROXY_OPTION_PROCESSING   0
 
-/* Enable client-side support for COAP observe */
+/* Disable client-side support for COAP observe to save RAM */
 #define COAP_OBSERVE_CLIENT 						0
 
 /* Maximum number of online nodes */
-#define CONTROLLER_CONF_MAX_ONLINE_COAP_NODES       5
+#define NODE_TABLE_CONF_SIZE                        5
 
 
 #undef UIP_CONF_TCP
@@ -70,6 +70,14 @@
 #define IP_LINK_LOCAL_PREFIX_BYTE	                (0x21)
 // Link Layer header size - Ethernet - 14
 #define UIP_CONF_LLH_LEN							14
+
+
+
+
+#define UIP_CONF_MAX_ROUTES                         0
+#define NBR_TABLE_CONF_MAX_NEIGHBORS                10
+
+
 
 // Disable link statistics to avoid nbr-table bug
 #define LINK_STATS_CONF_ENABLED                     0
