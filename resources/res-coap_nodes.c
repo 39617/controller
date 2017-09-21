@@ -44,9 +44,9 @@ static uint32_t target_hash; /*!< Target as Hash as uint32_t */
 static const char *action; /*!< Its the a={x} in the Query | the action as string |  */
 static const char *params; /*!< Its the p={x} in the Query | the params as string |  */
 // lengths
-int target_len; /*!< Size of target */
-int action_len; /*!< Size of action */
-int params_len; /*!< Size of params */
+static int target_len; /*!< Size of target */
+static int action_len; /*!< Size of action */
+static int params_len; /*!< Size of params */
 /*---------------------------------------------------------------------------*/
 parse_pair_t post_key_pair[POST_PARAMS_N]; /*!< POST parameters are stored here */
 

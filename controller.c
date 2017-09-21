@@ -49,10 +49,6 @@ static uip_ipaddr_t prefix;// COOJA Only
 PROCESS(controller_process, "Controller process"); /*!< Creates the Process controller_process with name Controller process */
 AUTOSTART_PROCESSES(&controller_process); /*!< Auto Start the Process previoulsy created */
 
-
-uint16_t online_nodes_counter = 0; /*!< Total number of online nodes */
-
-
 /*
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
@@ -62,6 +58,7 @@ uint16_t online_nodes_counter = 0; /*!< Total number of online nodes */
  * @{
  */
 extern resource_t res_coapnodes; /*!< Resources to be activated need to be imported through the extern keyword. */
+extern resource_t res_getnodes;
 extern resource_t res_coaptohttp;
 
 extern uip_ipaddr_t default_neighbor_ip6_addr; /*!< Unknow Requests goes to Default neightbor */
@@ -160,6 +157,8 @@ PROCESS_THREAD(controller_process, ev, data)
 	 */
 	// CoAP nodes
 	rest_activate_resource(&res_coapnodes, "/coapnode");
+	//
+	rest_activate_resource(&res_getnodes, "/getnodes");
 	// CoAP-HTTP
 	rest_activate_resource(&res_coaptohttp, "coaptohttp");
 
@@ -185,15 +184,16 @@ PROCESS_THREAD(controller_process, ev, data)
 			           uip_datalen());
 			    //
 			    int ret = netctrl_server_handle_net_event();
-			    if(ret == NETCTRL_RESPONSE_RESULT_REG_OK || ret == NETCTRL_RESPONSE_RESULT_RENEW_OK) {
+			    //if(ret == NETCTRL_RESPONSE_RESULT_REG_OK || ret == NETCTRL_RESPONSE_RESULT_RENEW_OK) {
 				    // Need to update the table and reset the timer
-				    etimer_set(&et_node_table, node_table_refresh() * CLOCK_SECOND);
-			    }
+				    etimer_set(&et_node_table, node_table_refresh());
+			    //}
 			}
 		} else if(ev == PROCESS_EVENT_TIMER && data == &et_light_signal) {
 			etimer_set(&et_light_signal, update_light_signal());
 		} else if(ev == PROCESS_EVENT_TIMER && data == &et_node_table) {
-			etimer_set(&et_node_table, node_table_refresh() * CLOCK_SECOND);
+			PRINTF("** Refreshing table with Timer event.\n");
+			etimer_set(&et_node_table, node_table_refresh());
 		}
 	}
 
