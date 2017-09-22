@@ -213,6 +213,7 @@ PROCESS_THREAD(controller_process, ev, data)
 /* Some example here */
 #pragma message(VAR_NAME_VALUE(NETSTACK_CONF_RADIO))
 #pragma message(VAR_NAME_VALUE(NETSTACK_CONF_RDC))
+#pragma message(VAR_NAME_VALUE(NETSTACK_CONF_MAC))
 #pragma message(VAR_NAME_VALUE(UIP_FALLBACK_INTERFACE))
 #pragma message(VAR_NAME_VALUE(UIP_CONF_ROUTER))
 #pragma message(VAR_NAME_VALUE(UIP_ND6_SEND_RA))
