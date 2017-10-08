@@ -23,6 +23,8 @@
 //
 #define TYPE_PARAM                             "t" /*!< Query Param for Type */
 #define TYPE_PARAM_MAX_LEN		     			3 /*!< Because it's a char, its max values is 255 */
+#define HASH_PARAM                             "h" /*!< Query Param to filter by Hash */
+#define HASH_PARAM_MAX_LEN		     			10 /*!< Because it's a uint32_t, its max values is 4294967295 */
 /*---------------------------------------------------------------------------*/
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
@@ -36,9 +38,13 @@ RESOURCE_HTTP(res_getnodes,
 /*---------------------------------------------------------------------------*/
 static const char *type_str; /*!< Its the t={x} in the Query | the target as string |  */
 static uint8_t type_filter; /*!< Filter Node's Table by this type if present */
+//
+static const char *hash_str; /*!< Its the h={x} in the Query | the hash as string |  */
+static uint32_t hash_filter; /*!< Filter Node's Table by this hash if present */
 
 // lengths
-int type_len; /*!< Size of target */
+static int type_len; /*!< Size of target */
+static int hash_len; /*!< Size of hash */
 /*---------------------------------------------------------------------------*/
 
 // TODO: maybe the size of the keys should be reduced. Ex.: eq_type => et
@@ -91,7 +97,8 @@ get_next_node:
 		// Empty table?
 		if(node_table_iterate(&it) == 0) {
 			// Apply filter if exists
-			if((type_len > 0) && (it.node->type != type_filter)) {
+			if(((type_len > 0) && (it.node->type != type_filter)) ||
+					((hash_len > 0) && (it.node->hash != hash_filter))) {
 				// Get another one
 				goto get_next_node;
 			}
@@ -115,7 +122,12 @@ get_next_node:
 		// TODO: this is a naive aproach. For a correct aproach we need an RTC working with NTP.
 		len = snprintf((char *)buffer, buf_len, obj_uptime,  (clock_time() - it.node->timestamp) /  CLOCK_SECOND);
 		obj_hash_ptr = obj_hash_with_prev;
-		step = 1;
+		// Attempts to terminate the loop when it filters by hash and has been found
+		if(hash_len > 0) {
+			step = 5;
+		} else {
+			step = 1;
+		}
 		break;
 /*---------------------------------------------------------------------------*/
 	case 5:
@@ -150,7 +162,15 @@ static size_t parse_type_str() {
 	type_filter = strtoul(type_str, NULL, 10);
 	return (type_filter > 0 || type_filter == UCHAR_MAX)? 1 : 0;
 }
-
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Parses the hash query param
+ * @return size_t
+ */
+static size_t parse_hash_str() {
+	hash_filter = strtoul(hash_str, NULL, 10);
+	return (hash_filter > 0 || hash_filter == UINT_MAX)? 1 : 0;
+}
 /**
  * @brief Common Handler on a HTTP request
  *
@@ -165,13 +185,16 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 	httpd_state * req = (httpd_state *)request;
 
 	/* -----------------  parse query parameters  ----------------- */
+	// *** Equipement Type ***
 	type_len = REST.get_query_variable(request, TYPE_PARAM, &type_str);
 	//
+#if DEBUG == 1
 	PRINTF("** Type with len %d: ", type_len);
 	int i; /* for PRINT_ARRAY */
 	const char * ptr = type_str;
 	PRINT_ARRAY(ptr, type_len);
 	PRINTF("\n");
+#endif /* DEBUG == 1 */
 	/* Parameters are optional but need to be valid if present! */
 	if(type_len > 0) {
 		if((parse_type_str() == 0) || (type_len > TYPE_PARAM_MAX_LEN)) {
@@ -180,7 +203,25 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 			return;
 		}
 	}
-
+	// *** Hash ***
+	hash_len = REST.get_query_variable(request, HASH_PARAM, &hash_str);
+#if DEBUG == 1
+	PRINTF("** Hash with len %d: ", hash_len);
+	PRINT_ARRAY(ptr, hash_len);
+	PRINTF("\n");
+#endif /* DEBUG == 1 */
+	/* Parameters are optional but need to be valid if present! */
+	if(hash_len > 0) {
+		if((parse_hash_str() == 0) || (hash_len > HASH_PARAM_MAX_LEN)) {
+			PRINTF("!!! Invalid Hash argument received!\n");
+			set_http_error(request, error_invalid_params, REST.status.BAD_REQUEST);
+			return;
+		} else if(node_table_get_node_by_hash(hash_filter) == NULL) {
+			PRINTF("!!! Hash not found in table!\n");
+			set_http_error(request, error_node_not_found, REST.status.NOT_FOUND);
+			return;
+		}
+	}
 	/* ----------------------------------------------------- */
 	rsp->immediate_response = 1;
 	rsp->large_rsp = RESPONSE_TYPE_LARGE;

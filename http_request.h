@@ -36,6 +36,7 @@ typedef struct _http_request {
     uint16_t payload_len;
     void (*callback)(char *data, uint16_t len, int identifier, int state); //!< Called when response is received, state indicate success or error
     uint32_t identifier; //!< identifier of hardware that requested this request
+    uint32_t node_hash; /*!< identifier of the requester */
 }http_request_t, *p_http_request_t;
 
 

@@ -67,7 +67,7 @@ static void start_get(void){
 
 }
 /*-----------------------------------------------------------------------------------*/
-static void start_post(void){
+static void start_post(uint32_t requester_hash){
     uip_ipaddr_t addr;
     #if UIP_UDP
     //First check if the host is an IP address. - Currently we only accept IP addresses!
@@ -86,7 +86,8 @@ static void start_post(void){
     #endif /* UIP_UDP */
 
 
-    if(webclient_post(host,port, local_req->path, local_req->path_len, local_req->payload, local_req->payload_len) == 0) {
+    if(webclient_post(host,port, local_req->path, local_req->path_len, local_req->payload,
+    		local_req->payload_len, requester_hash) == 0) {
         state = IDLE;
         if(local_req->callback != NULL) {
         	local_req->callback("Out of memory error", 0, local_req->identifier, GENERIC_ERROR);
@@ -148,7 +149,7 @@ PROCESS_THREAD(http_request_process, ev, data)
         }else{
             state = RUNNING;
             local_req = (p_http_request_t) data;
-            start_post();
+            start_post(local_req->node_hash);
         }
     }else if(ev == tcpip_event) {
       webclient_appcall(data);

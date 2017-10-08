@@ -71,11 +71,10 @@
 // Link Layer header size - Ethernet - 14
 #define UIP_CONF_LLH_LEN							14
 
-
-
-
+// To save RAM
 #define UIP_CONF_MAX_ROUTES                         0
 #define NBR_TABLE_CONF_MAX_NEIGHBORS                10
+#define PROCESS_CONF_NO_PROCESS_NAMES               1
 //
 #define UIP_CONF_IPV6_QUEUE_PKT  1 /*!< Enables Queue packet buffer */
 #define QUEUEBUF_CONF_NUM  4 /*!< Limits the Queue buffer to 4 packets at a time. Uses ~830 bytes of RAM */

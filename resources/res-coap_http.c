@@ -103,6 +103,7 @@ res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t prefer
 	PRINTF("\n");
 
 	resourse_request.callback = NULL;
+	resourse_request.node_hash = node->hash;
 	process_post_synch(&http_request_process, http_request_post_event, &resourse_request);
 	REST.set_response_status(response, CONTENT_2_05);
 }
